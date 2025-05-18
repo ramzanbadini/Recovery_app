@@ -33,23 +33,47 @@ class VideoPlayerWidget(QtWidgets.QWidget):
         layout_vid = QtWidgets.QVBoxLayout()
         layout_vid.addWidget(self.videoWidget)
         self.mediaPlayer.setVideoOutput(self.videoWidget)
+        
 
         # Video control buttons
         control_layout = QtWidgets.QVBoxLayout()
-        self.play_button = QtWidgets.QPushButton("Play")
-        self.play_button.clicked.connect(self.play_video)
-        control_layout.addWidget(self.play_button)
+        play_button = self.but_style("Play")
+        play_button.clicked.connect(self.play_video)
+        control_layout.addWidget(play_button)
 
-        self.pause_button = QtWidgets.QPushButton("Pause")
-        self.pause_button.clicked.connect(self.pause_video)
-        control_layout.addWidget(self.pause_button)
+        pause_button = self.but_style("Pause")
+        pause_button.clicked.connect(self.pause_video)
+        control_layout.addWidget(pause_button)
+        
+        stop_button = self.but_style("Stop")
+        stop_button.clicked.connect(self.stop_video)
+        control_layout.addWidget(stop_button)
+        
+        ful_screen = self.but_style("Fullscreen")
+        ful_screen.clicked.connect(self.toggle_fullscreen)
+        control_layout.addWidget(ful_screen)
 
-        self.fullscreen_button = QtWidgets.QPushButton("Full Screen")
-        self.fullscreen_button.clicked.connect(self.toggle_fullscreen)
-        control_layout.addWidget(self.fullscreen_button)
 
         # Video seeking slider
         self.position_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.position_slider.setStyleSheet("""
+            QSlider::groove:horizontal {
+                height: 6px;
+                background: #bbb;
+                border-radius: 3px;
+            }
+
+            QSlider::handle:horizontal {
+                background: #3498db;
+                border: 1px solid #2980b9;
+                width: 16px;
+                height: 16px;
+                margin: -6px 0; /* to center the round handle vertically */
+                border-radius: 8px; /* makes it round */
+            }
+        """)
+
+        
         self.position_slider.sliderMoved.connect(self.set_position)
         layout_vid.addWidget(self.position_slider)
 
@@ -59,6 +83,28 @@ class VideoPlayerWidget(QtWidgets.QWidget):
         # Connect media player signals
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
+    def but_style(self, text):
+        self.button = QtWidgets.QPushButton(text)
+
+        self.button.setStyleSheet("""
+            QPushButton {
+                background-color: #6b9bbb;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 6px;
+                min-width: 30px;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton:pressed {
+                background-color: #2471a3;
+            }
+        """)
+        return self.button
 
     def play_video(self):
         self.mediaPlayer.play()
@@ -66,6 +112,9 @@ class VideoPlayerWidget(QtWidgets.QWidget):
     def pause_video(self):
         self.mediaPlayer.pause()
 
+    def stop_video(self):
+        self.mediaPlayer.stop()
+        
     def toggle_fullscreen(self):
         if self.videoWidget.isFullScreen():
             self.videoWidget.setFullScreen(False)

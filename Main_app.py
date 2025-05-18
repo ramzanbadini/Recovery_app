@@ -202,24 +202,35 @@ class RemoveDialog(QtWidgets.QDialog):
 
     def init_ui(self):
 
-        main_layout = QtWidgets.QVBoxLayout(self)
+        parent_layout = QtWidgets.QVBoxLayout(self)
         sys_layout  = QtWidgets.QHBoxLayout(self)
         subsys_layout  = QtWidgets.QHBoxLayout(self)
 
 ##  delete title
-        del_title = QtWidgets.QLabel("Delete System")
+        title_container = QtWidgets.QWidget()
+        title_layout = QtWidgets.QVBoxLayout()
+        title_layout.setContentsMargins(0, 0, 0, 0)  # No margin
+        title_layout.setSpacing(5)  # Reduce spacing between title and next item
+        
+        del_title = QtWidgets.QLabel("Delete Systems")
 
         del_title.setStyleSheet("""
         QLabel {
             font-weight: bold;
             font-size: 18px;
             color: #2c3e50;
-            padding: 4px;
             }
         """)
-        del_title.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center the label
 
-        main_layout.addWidget(del_title)
+        del_title.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+
+        title_layout.addWidget(del_title)
+        title_container.setLayout(title_layout)
+
+        parent_layout.addWidget(title_container)
+
+
+##        main_layout.addWidget(del_title)
         
         # system labele and combo
         self.sys_label = self.del_labels("Select System")
@@ -312,10 +323,10 @@ class RemoveDialog(QtWidgets.QDialog):
 
         
 ################
-        main_layout.addLayout(sys_layout)
-        main_layout.addLayout(subsys_layout)
+        parent_layout.addLayout(sys_layout)
+        parent_layout.addLayout(subsys_layout)
 
-        main_layout.addWidget(delete_button)
+        parent_layout.addWidget(delete_button)
 
 
 
@@ -426,16 +437,41 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         # Create main widget and a horizontal splitter for left (tree) and right (content)
         central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(central_widget)
-        main_layout = QtWidgets.QHBoxLayout(central_widget)
+        main1_layout = QtWidgets.QVBoxLayout(central_widget)
 
+        main2_layout = QtWidgets.QHBoxLayout()
+
+
+        #### title buttons Home and Exit
+        title_layout = QtWidgets.QHBoxLayout()
+##        title_layout.setSpacing(30)
+
+##        title_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)  # Align to left
+
+        home_button = self.but_style("Home", "#8d9d8c")
+        home_button.clicked.connect(self.go_home)
+        title_layout.addWidget(home_button)
+
+        title_layout.addStretch() ## push the button to the left and right most corners
+
+        exit_button = self.but_style("Exit", "#8d9d8c")
+        exit_button.clicked.connect(QtWidgets.QApplication.quit)
+        title_layout.addWidget(exit_button)
+
+        main1_layout.addLayout(title_layout)
+        
         self.main_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.main_splitter.setStyleSheet("""
             QSplitter::handle {
                 background-color: lightgray;
                 width: 1px;
-        }
+            }
         """)
-        main_layout.addWidget(self.main_splitter)
+        main2_layout.addWidget(self.main_splitter)
+
+
+        main1_layout.addLayout(main2_layout)
+
 
         # Left panel: Search bar and tree view in a vertical layout
         left_panel = QtWidgets.QWidget(self)
@@ -473,21 +509,20 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         add_rem_layout = QtWidgets.QHBoxLayout()
 
         # Upload Button
-        self.Upload_button = QtWidgets.QPushButton("Upload System")
+        self.Upload_button = self.but_style("Upload", "#4a8349")
         self.Upload_button.clicked.connect(self.open_upload_dialog)
         add_rem_layout.addWidget(self.Upload_button)
 
         # Remove Button
-        self.remove_button = QtWidgets.QPushButton("Remmove System")
+        self.remove_button = self.but_style("Remove", "#4a8349")
         self.remove_button.clicked.connect(self.request_login)
         add_rem_layout.addWidget(self.remove_button)
 
         # Log 
-        self.remove_button = QtWidgets.QPushButton("Log")
+        self.remove_button = self.but_style("Log", "#4a8349")
         self.remove_button.clicked.connect(self.open_remove_dialog)
         add_rem_layout.addWidget(self.remove_button)
 
-        
 
         left_layout.addLayout(add_rem_layout)
 
@@ -497,8 +532,8 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         self.content_splitter.addWidget(self.video_player)
 
         # Ensure both description and video share equal space initially
-        self.content_splitter.setStretchFactor(0, 1)    ## the (desc, 1 factor)
-        self.content_splitter.setStretchFactor(1, 1)    ## the (vid, 1 factor ) both equial
+        self.content_splitter.setStretchFactor(0, 1)    ## the (description par, 1 factor)
+        self.content_splitter.setStretchFactor(1, 3)    ## the (vid, 1 factor ) both equial
         self.main_splitter.addWidget(right_panel)
         self.main_splitter.setStretchFactor(1, 3)       ## index 1 ie right panel will get more size
 
@@ -507,19 +542,19 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         self.update_status("No system selected", "", "")
 
         # Menu Bar: Upload and Home actions
-        menu = self.menuBar()
-        file_menu = menu.addMenu("File")
-        upload_action = QtGui.QAction("Upload", self)
-        upload_action.triggered.connect(self.open_upload_dialog)
-        file_menu.addAction(upload_action)
-
-        remove_action = QtGui.QAction("Remove", self)
-        remove_action.triggered.connect(self.open_remove_dialog)
-        file_menu.addAction(remove_action)
-
-        home_action = QtGui.QAction("Home", self)
-        home_action.triggered.connect(self.go_home)
-        file_menu.addAction(home_action)
+##        menu = self.menuBar()
+##        file_menu = menu.addMenu("File")
+##        upload_action = QtGui.QAction("Upload", self)
+##        upload_action.triggered.connect(self.open_upload_dialog)
+##        file_menu.addAction(upload_action)
+##
+##        remove_action = QtGui.QAction("Remove", self)
+##        remove_action.triggered.connect(self.open_remove_dialog)
+##        file_menu.addAction(remove_action)
+##
+##        home_action = QtGui.QAction("Home", self)
+##        home_action.triggered.connect(self.go_home)
+##        file_menu.addAction(home_action)
 
         # Connect tree view selection and search bar
         self.tree.itemClicked.connect(self.tree_item_clicked)
@@ -527,6 +562,32 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
 
         # Populate tree from database
         self.populate_tree()
+
+
+    def but_style(self, text, color: str):
+        self.button = QtWidgets.QPushButton(text)
+
+        self.button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {color};
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                padding: 6px 6px;           /* reduced from 16px to 12px */
+                border-radius: 6px;
+                min-width: 60px;             /* adjust this */
+                max-width: 90px;            /* optional cap */
+            }}
+            QPushButton:hover {{
+                background-color: #257526;
+            }}
+            QPushButton:pressed {{
+                background-color: #2471a3;
+            }}
+        """)
+        return self.button
+
 
 
 
@@ -681,19 +742,23 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 ##        monogram_label_1.setAlignment(Qt.AlignmentFlag.AlignLeft)  # 
 ##        Upper_layout.insertWidget(0, monogram_label_1) 
 
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+        rad_gify_path = os.path.join(BASE_DIR, "Photos", "rad_gify.gif")
         gif_label = QtWidgets.QLabel()
         gif_label.setScaledContents(True)           # scale 
         gif_label.setFixedSize(200-50, 200-50)            # display dimensions
         gif_label.setAlignment(Qt.AlignmentFlag.AlignRight)  # 
-        movie = QtGui.QMovie(r"C:\Users\PMYLS\Documents\radar_recovery\Photos\rad_gify.gif")  
+        movie = QtGui.QMovie(rad_gify_path)  
         gif_label.setMovie(movie)
         movie.start()  # Start the animation
         Upper_layout.insertWidget(0,gif_label) 
 
         
         ### 487 Monogram
+        label_487 = os.path.join(BASE_DIR, "Photos", "lable_487.png")
         monogram_label_3 = QtWidgets.QLabel()
-        pixmap3 = QPixmap(r"C:\Users\PMYLS\Documents\radar_recovery\Photos\lable_487.png")        
+        pixmap3 = QPixmap(label_487)        
         monogram_label_3.setPixmap(pixmap3)                 
         monogram_label_3.setScaledContents(True)           # scale pixmap to label’s size 
         monogram_label_3.setFixedSize(400, 100)            # display dimensions
@@ -703,8 +768,9 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 
         #Upper_layout.addWidget(Upper_lable)
         ### 487 Monogram
+        mono_487 = os.path.join(BASE_DIR, "Photos", "487_mono.png")
         monogram_label_2 = QtWidgets.QLabel()
-        pixmap2 = QPixmap(r"C:\Users\PMYLS\Documents\radar_recovery\Photos\487_mono.png")        
+        pixmap2 = QPixmap(mono_487)        
         monogram_label_2.setPixmap(pixmap2)                 
         monogram_label_2.setScaledContents(True)           # scale pixmap to label’s size 
         monogram_label_2.setFixedSize(200-50, 250-50)            # display dimensions
@@ -731,7 +797,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         # Header information with larger fonts
         header_label = QtWidgets.QLabel("Idea Conceived by: XXX")
         author_label = QtWidgets.QLabel("Developed by:  Flt Lt M. Ramzan Badini")
-        conceived_label = QtWidgets.QLabel("Advisor:  xxxx")
+        conceived_label = QtWidgets.QLabel("Aproved by:  xxxx")
         for label in (header_label, author_label, conceived_label):
             label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
             label.setStyleSheet("font-size: 18px; font-weight: bold;")
@@ -812,7 +878,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 # ---------------------------
 # Main Application Execution
 # ---------------------------
-def main():
+def main():    
     app = QtWidgets.QApplication(sys.argv)
     # Set a global stylesheet for a larger, cleaner font
     app.setStyleSheet("QWidget { font-size: 13px; }")
