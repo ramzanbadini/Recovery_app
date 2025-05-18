@@ -75,9 +75,8 @@ class DatabaseManager:
         cursor.execute("SELECT id, system_name FROM systems WHERE radar_type = ? AND parent_id = ?", (radar_type, main_id))
         return cursor.fetchall()
 
-
-
-
+### the practice area
+    
 ##db = DatabaseManager("radar_systems.db")
 ##print(db.delete_system(4))
 ##
@@ -87,4 +86,3 @@ class DatabaseManager:
 ##for entry in db.combo_data("Radar 1"):
 ##    print (entry[1])
 ##    print(" ")
-
