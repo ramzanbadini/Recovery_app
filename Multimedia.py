@@ -34,6 +34,10 @@ class VideoPlayerWidget(QtWidgets.QWidget):
         layout_vid.addWidget(self.videoWidget)
         self.mediaPlayer.setVideoOutput(self.videoWidget)
         
+        # Create audio output and set it on the player
+        self.audio_output = QtMultimedia.QAudioOutput()
+        self.mediaPlayer.setAudioOutput(self.audio_output)
+        self.audio_output.setVolume(1.0)  # Max is 1.0
 
         # Video control buttons
         control_layout = QtWidgets.QVBoxLayout()

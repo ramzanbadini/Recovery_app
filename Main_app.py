@@ -203,18 +203,11 @@ class RemoveDialog(QtWidgets.QDialog):
     def init_ui(self):
 
         parent_layout = QtWidgets.QVBoxLayout(self)
-        sys_layout  = QtWidgets.QHBoxLayout(self)
-        subsys_layout  = QtWidgets.QHBoxLayout(self)
 
 ##  delete title
-        title_container = QtWidgets.QWidget()
-        title_layout = QtWidgets.QVBoxLayout()
-        title_layout.setContentsMargins(0, 0, 0, 0)  # No margin
-        title_layout.setSpacing(5)  # Reduce spacing between title and next item
-        
-        del_title = QtWidgets.QLabel("Delete Systems")
+        self.del_title = QtWidgets.QLabel("Delete Systems")
 
-        del_title.setStyleSheet("""
+        self.del_title.setStyleSheet("""
         QLabel {
             font-weight: bold;
             font-size: 18px;
@@ -222,16 +215,11 @@ class RemoveDialog(QtWidgets.QDialog):
             }
         """)
 
-        del_title.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
-
-        title_layout.addWidget(del_title)
-        title_container.setLayout(title_layout)
-
-        parent_layout.addWidget(title_container)
+##        parent_layout.addWidget(self.del_title)
 
 
-##        main_layout.addWidget(del_title)
-        
+
+        sys_layout  = QtWidgets.QHBoxLayout(self)        
         # system labele and combo
         self.sys_label = self.del_labels("Select System")
         sys_layout.addWidget(self.sys_label)
@@ -262,6 +250,8 @@ class RemoveDialog(QtWidgets.QDialog):
         sys_layout.addWidget(self.mainCombo)
 
 ### sub system lable and combo
+        subsys_layout  = QtWidgets.QHBoxLayout(self)
+
         self.subsys_label = self.del_labels("Select Sub-System")
         subsys_layout.addWidget(self.subsys_label)
                     
@@ -323,6 +313,7 @@ class RemoveDialog(QtWidgets.QDialog):
 
         
 ################
+
         parent_layout.addLayout(sys_layout)
         parent_layout.addLayout(subsys_layout)
 
