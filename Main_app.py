@@ -1,5 +1,6 @@
 import sys
 import os
+import shutil
 from Database import DatabaseManager
 from Multimedia import VideoPlayerWidget
 from Multimedia import CustomVideoWidget
@@ -17,7 +18,7 @@ class LoginDialog(QtWidgets.QDialog):
         self.radar_type = radar_type
         self.db_manager = db_manager
         self.setWindowTitle("Only Admin Authorized")
-        self.setFixedSize(300, 120)
+        self.setFixedSize(400, 200)
 
         self.init_ui()
         
@@ -32,20 +33,133 @@ class LoginDialog(QtWidgets.QDialog):
         layout.addRow("Password:", self.password_input)
 
         self.login_button = QtWidgets.QPushButton("Login")
+        self.login_button = self.but_styl(self.login_button,"#578959")
         self.login_button.clicked.connect(self.check_credentials)
+        
         layout.addWidget(self.login_button)
+        
+        self.change_password_button = QtWidgets.QPushButton("Change Password")
+        self.change_password_button = self.but_styl(self.change_password_button, "#5c835e")
+        self.change_password_button.clicked.connect(self.open_change_password_dialog)
+
+        spacer = QtWidgets.QSpacerItem(
+            20, 10,
+            QtWidgets.QSizePolicy.Policy.Expanding, 
+            QtWidgets.QSizePolicy.Policy.Minimum
+        )
+
+        layout.addItem(spacer)
+        
+        layout.addWidget(self.change_password_button)
+
 
         self.setLayout(layout)
         self.access_granted = False
 
+
+    def but_styl(self, button, color: str):
+        button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {color};
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                padding: 6px 6px;           /* reduced from 16px to 12px */
+                border-radius: 6px;
+                min-width: 60px;             /* adjust this */
+                max-width: 140px;            /* optional cap */
+            }}
+            QPushButton:hover {{
+                background-color: #257526;
+            }}
+            QPushButton:pressed {{
+                background-color: #2471a3;
+            }}
+        """)
+        return button
+
     def check_credentials(self):
-        username = "admin" #self.username_input.text()
-        password = "1234" #self.password_input.text()
-        if username == VALID_USERNAME and password == VALID_PASSWORD:
+
+        
+##        username = "admin" #self.username_input.text()
+##        password = "1234" #self.password_input.text()
+
+        username = self.username_input.text()
+        password = self.password_input.text()
+
+        result = self.db_manager.authenticate(username)
+        print ("this is the pass: ", result)
+        
+        if result and password == result[0]:
             self.access_granted = True
             self.accept()
         else:
-            QMessageBox.warning(self, "Access Denied", "Invalid username or password")
+            QtWidgets.QMessageBox.warning(self, "Access Denied", "Invalid username or password")
+
+    def open_change_password_dialog(self):
+        dialog = ChangePasswordDialog(self.radar_type, self.db_manager, self)
+        dialog.exec()
+
+
+
+####
+class ChangePasswordDialog(QtWidgets.QDialog):
+    def __init__(self, radar_type, db_manager, parent=None):
+        super().__init__(parent)
+        self.db_manager = db_manager
+        self.setFixedSize(400, 200)
+        self.setWindowTitle("Change Password")
+
+
+        layout = QtWidgets.QFormLayout(self)
+ ## the old user name and passoerd
+        self.old_user_input = QtWidgets.QLineEdit()
+        
+        self.old_password_input = QtWidgets.QLineEdit()
+       #self.old_password_input.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)     #to hide te password in dots
+
+## new user and password
+        self.new_user_input = QtWidgets.QLineEdit()
+        
+        self.new_password_input = QtWidgets.QLineEdit()
+        #self.new_password_input.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+
+        layout.addRow("Old User:", self.old_user_input)
+        layout.addRow("Old Password:", self.old_password_input)
+
+        layout.addRow("New User:", self.new_user_input)
+        layout.addRow("New Password:", self.new_password_input)
+        
+        self.submit_button = QtWidgets.QPushButton("Submit")
+        self.submit_button.clicked.connect(self.change_password)
+        layout.addWidget(self.submit_button)
+
+    def change_password(self):
+        old_user = self.old_user_input.text()
+        old_pw = self.old_password_input.text()
+        
+        new_user = self.new_user_input.text()
+        new_pw = self.new_password_input.text()
+
+   
+        results = self.db_manager.get_user_password(old_user)
+        print ("the old password is: ", results)
+
+
+        if results and results[0] == old_user:
+            if results[1] == old_pw:
+
+                update_user = self.db_manager.update_user(new_user, new_pw, results[0], results[1])
+
+                QtWidgets.QMessageBox.information(self, "Success", "Password changed successfully.")
+                self.accept()
+            else:
+                QtWidgets.QMessageBox.warning(self, "Error", "Old password is incorrect.")
+                
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "Old user or Password incorrect.")
+
 
 
 ## uploading data diaglloge
@@ -151,9 +265,13 @@ class UploadDialog(QtWidgets.QDialog):
         self.video_path_edit.setFixedWidth(300)  # Fix width
         self.video_path_edit.setPlaceholderText("Select MP4 Video")
         file_layout.addWidget(self.video_path_edit)
-        self.browse_btn = QtWidgets.QPushButton("Browse", self)
-        self.browse_btn.clicked.connect(self.browse_video)
-        file_layout.addWidget(self.browse_btn)
+        browse_btn = QtWidgets.QPushButton("Browse", self)
+        browse_btn = self.button_style(browse_btn, "#346e1b")
+        
+
+        
+        browse_btn.clicked.connect(self.browse_video)
+        file_layout.addWidget(browse_btn)
         layout.addLayout(file_layout)
 
 ###### separator line
@@ -166,9 +284,58 @@ class UploadDialog(QtWidgets.QDialog):
         # Dialog buttons: Submit and Cancel
         btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok |
                                              QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        btn_box = self.button_style(btn_box, "#2778b4")        
         btn_box.accepted.connect(self.accept)
         btn_box.rejected.connect(self.reject)
         layout.addWidget(btn_box)
+
+
+    def button_style(self, button, color: str):
+        button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {color};
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                padding: 6px 6px;           /* reduced from 16px to 12px */
+                border-radius: 6px;
+                min-width: 60px;             /* adjust this */
+                max-width: 90px;            /* optional cap */
+            }}
+            QPushButton:hover {{
+                background-color: #257526;
+            }}
+            QPushButton:pressed {{
+                background-color: #2471a3;
+            }}
+        """)
+        return button
+
+##        
+##        button.setStyleSheet(f"""
+##            QPushButton {
+##                background-color: {color};
+##                color: white;
+##                font-size: 14px;
+##                font-weight: bold;
+##                border: none;
+##                padding: 6px 16px;
+##                border-radius: 6px;
+##                min-width: 80px;
+##                max-width: 70px;
+##
+##            }
+##            QPushButton:hover {
+##                background-color: #2980b9;
+##            }
+##            QPushButton:pressed {
+##                background-color: #2471a3;
+##            }
+##        """)
+##
+##        return button
+
 
     def browse_video(self):
         file_dialog = QtWidgets.QFileDialog(self)
@@ -176,7 +343,31 @@ class UploadDialog(QtWidgets.QDialog):
         if file_dialog.exec():
             selected_files = file_dialog.selectedFiles()
             if selected_files:
-                self.video_path_edit.setText(selected_files[0])
+                source_path = os.path.abspath(selected_files[0])  # Absolute path of selected file
+                file_name = os.path.basename(source_path)
+
+                # Define Videos folder relative to Main_app.py location
+                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                videos_dir = os.path.join(base_dir, "Videos")
+
+                # Create Videos folder if it doesn't exist
+                os.makedirs(videos_dir, exist_ok=True)
+
+                # Destination path
+                destination_path = os.path.join(videos_dir, file_name)
+
+                #until the video is copying
+                self.video_path_edit.setText("Copying, please wait...")
+                QtWidgets.QApplication.processEvents()  # Force UI to update immediately
+
+                # Copy only if it's not already in the Videos folder
+                if source_path != destination_path:
+                    shutil.copy2(source_path, destination_path)
+
+                # Set the new path in the QLineEdit
+                self.video_path_edit.setText(destination_path)
+                print(destination_path)
+                
 
     def get_upload_data(self):
         parent_id = self.parent_combo.currentData()  # Eacg sub_sys will have a parent ID and for top level that would be none

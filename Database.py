@@ -21,6 +21,14 @@ class DatabaseManager:
             radar_type TEXT NOT NULL
         )
         """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Authentication (
+            username TEXT PRIMARY KEY,
+            password TEXT
+        )
+        """)
+        
         self.conn.commit()
 
     def insert_system(self, parent_id, system_name, description, upload_date, uploader_name, video_path, radar_type):
@@ -75,12 +83,53 @@ class DatabaseManager:
         cursor.execute("SELECT id, system_name FROM systems WHERE radar_type = ? AND parent_id = ?", (radar_type, main_id))
         return cursor.fetchall()
 
-### the practice area
+
+############## for table authentication
     
+    def insert_user(self, username, password):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            INSERT INTO Authentication (username, password)
+            VALUES (?, ?)
+        """, (username, password))
+        self.conn.commit()
+        return cursor.lastrowid
+
+    def authenticate(self, username):
+        cursor = self.conn.cursor()
+##        cursor.execute("SELECT * FROM systems ORDER BY id DESC LIMIT 1")
+        cursor.execute("SELECT password FROM Authentication WHERE username = ?", (username,))
+        return cursor.fetchone()
+
+    def get_user_password(self, old_username):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT username, password FROM Authentication WHERE username = ?", (old_username,))
+        return cursor.fetchone()  # returns a single tuple: (username, password) or None
+
+
+    def update_user(self, new_username, new_password, old_username, old_password):
+        cursor = self.conn.cursor()
+##        cursor.execute("DELETE FROM systems WHERE id=?", (system_id,))
+
+        cursor.execute("""
+            UPDATE Authentication
+            SET username = ?, password = ?
+            WHERE username = ? AND password = ?
+        """, (new_username, new_password, old_username, old_password))
+        
+        self.conn.commit()
+
+
+### the practice area
+##    
 ##db = DatabaseManager("radar_systems.db")
-##print(db.delete_system(4))
-##
-##
+##result = db.get_user_password("balochi")
+##print (result)
+
+##db = DatabaseManager("radar_systems.db")
+##print(db.update_user("balochi", "kings", "ramzee", "1234"))
+
+
 ##print(" ")
 ##
 ##for entry in db.combo_data("Radar 1"):
