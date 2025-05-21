@@ -2,9 +2,11 @@ import sys
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui, QtMultimedia, QtMultimediaWidgets
 
-# ---------------------------
+#### this gives the media player of the app
+
+
 # Custom Video Widget for Fullscreen Handling
-# ---------------------------
+
 class CustomVideoWidget(QtMultimediaWidgets.QVideoWidget):
     def keyPressEvent(self, event: QtGui.QKeyEvent):
         if event.key() == QtCore.Qt.Key.Key_Escape and self.isFullScreen():
@@ -14,9 +16,8 @@ class CustomVideoWidget(QtMultimediaWidgets.QVideoWidget):
 
 
 
-# ---------------------------
-# Video Player Module
-# ---------------------------
+# Video Player Module 
+
 class VideoPlayerWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
