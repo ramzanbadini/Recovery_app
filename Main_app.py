@@ -9,8 +9,8 @@ from PyQt6.QtCore import QSize
 from PyQt6 import QtWidgets, QtCore, QtGui, QtMultimedia, QtMultimediaWidgets
 from PyQt6.QtCore import Qt
 
-VALID_USERNAME = "admin"
-VALID_PASSWORD = "1234"
+master_key = "ramzee"
+master_password = "1234"
 
 class LoginDialog(QtWidgets.QDialog):
     def __init__(self, radar_type, db_manager, parent=None):
