@@ -39,7 +39,7 @@ class LoginDialog(QtWidgets.QDialog):
         layout.addWidget(self.login_button)
         
         self.change_password_button = QtWidgets.QPushButton("Change Password")
-        self.change_password_button = self.but_styl(self.change_password_button, "#5c835e")
+        self.change_password_button = self.but_styl(self.change_password_button, "#ea9999")
         self.change_password_button.clicked.connect(self.open_change_password_dialog)
 
         spacer = QtWidgets.QSpacerItem(
@@ -312,31 +312,6 @@ class UploadDialog(QtWidgets.QDialog):
         """)
         return button
 
-##        
-##        button.setStyleSheet(f"""
-##            QPushButton {
-##                background-color: {color};
-##                color: white;
-##                font-size: 14px;
-##                font-weight: bold;
-##                border: none;
-##                padding: 6px 16px;
-##                border-radius: 6px;
-##                min-width: 80px;
-##                max-width: 70px;
-##
-##            }
-##            QPushButton:hover {
-##                background-color: #2980b9;
-##            }
-##            QPushButton:pressed {
-##                background-color: #2471a3;
-##            }
-##        """)
-##
-##        return button
-
-
     def browse_video(self):
         file_dialog = QtWidgets.QFileDialog(self)
         file_dialog.setNameFilter("MP4 files (*.mp4)")
@@ -405,10 +380,6 @@ class RemoveDialog(QtWidgets.QDialog):
             color: #2c3e50;
             }
         """)
-
-##        parent_layout.addWidget(self.del_title)
-
-
 
         sys_layout  = QtWidgets.QHBoxLayout(self)        
         # system labele and combo
@@ -655,7 +626,7 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         main1_layout.addLayout(main2_layout)
 
 
-        # Left panel: Search bar and tree view in a vertical layout
+        # Left panel: Search bar and tree iew in a vertical layout
         left_panel = QtWidgets.QWidget(self)
         left_layout = QtWidgets.QVBoxLayout(left_panel)
         left_layout.setContentsMargins(5, 0, 5, 0)
@@ -670,7 +641,7 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         self.tree.setIndentation(15)  # Default is usually 20
         left_layout.addWidget(self.tree)
         self.main_splitter.addWidget(left_panel)
-        self.main_splitter.setStretchFactor(0, 1)  # Approximately 1/3     #### (index, factor size)                self.main_splitter.setSizes([20, 40])  # Left: 200px, Right: 400px
+        self.main_splitter.setStretchFactor(0, 2)  # Approximately 1/3     #### (index, factor size)                self.main_splitter.setSizes([20, 40])  # Left: 200px, Right: 400px
 
 
         # Right panel: Vertical splitter for description (top) and video (bottom)
@@ -685,24 +656,37 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         # Right upper panel: Text description (read-only)
         self.text_description = QtWidgets.QTextEdit(self)
         self.text_description.setReadOnly(True)
-        self.content_splitter.addWidget(self.text_description)
+        
+        groupBox = QtWidgets.QGroupBox("Notes / Comments")  # ✅ This is your title
+        groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.addWidget(self.text_description)
+        groupBox.setLayout(groupLayout)
+
+        self.content_splitter.addWidget(groupBox)
 
 
         add_rem_layout = QtWidgets.QHBoxLayout()
 
         # Upload Button
         self.Upload_button = self.but_style("Upload", "#4a8349")
-        self.Upload_button.clicked.connect(self.open_upload_dialog)
+        self.Upload_button.clicked.connect(lambda: self.request_login("upload"))
+
+        
+##        self.Upload_button.clicked.connect(self.request_login, "upload")
         add_rem_layout.addWidget(self.Upload_button)
 
         # Remove Button
         self.remove_button = self.but_style("Remove", "#4a8349")
-        self.remove_button.clicked.connect(self.request_login)
+        self.remove_button.clicked.connect(lambda: self.request_login("remove"))
+        
+        #self.remove_button.clicked.connect(self.request_login, "remove")
         add_rem_layout.addWidget(self.remove_button)
 
         # Log 
         self.remove_button = self.but_style("Log", "#4a8349")
-        self.remove_button.clicked.connect(self.open_remove_dialog)
+        self.remove_button.clicked.connect(lambda: self.request_login("log"))
+
+        #self.remove_button.clicked.connect(self.request_login, "log")
         add_rem_layout.addWidget(self.remove_button)
 
 
@@ -715,7 +699,7 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
 
         # Ensure both description and video share equal space initially
         self.content_splitter.setStretchFactor(0, 1)    ## the (description par, 1 factor)
-        self.content_splitter.setStretchFactor(1, 3)    ## the (vid, 1 factor ) both equial
+        self.content_splitter.setStretchFactor(1, 4)    ## the (vid, 1 factor ) both equial
         self.main_splitter.addWidget(right_panel)
         self.main_splitter.setStretchFactor(1, 3)       ## index 1 ie right panel will get more size
 
@@ -854,15 +838,31 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         self.status.showMessage(status_message)
 
     ###  authentication for deletion
-    def request_login(self):
+    def request_login(self, action: str):
         login_dialog = LoginDialog(self.radar_type, self.db_manager, self)
         if login_dialog.exec():
             if login_dialog.access_granted:
                 print("done")
-                try:
-                    self.open_remove_dialog()
-                except NameError as e:
-                    print(f"An error occurred: {e}")
+                if action == "upload":
+                    try:
+                        self.open_upload_dialog()
+                    except NameError as e:
+                        print(f"An error occurred: {e}")
+                    
+                if action == "remove":
+                    try:
+                        self.open_remove_dialog()
+                    except NameError as e:
+                        print(f"An error occurred: {e}")
+
+                if action == "log":
+                    try:
+                        self.open_log_dialog()
+                    except AttributeError:
+                        print("Method 'open_log_dialog' does not exist.")
+                        QtWidgets.QMessageBox.warning(self, "Access Denied", "Feature not A/A yet")
+
+                        
 
     def open_upload_dialog(self):
         dialog = UploadDialog(self.radar_type, self.db_manager, self)
@@ -926,28 +926,6 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-        rad_gify_path = os.path.join(BASE_DIR, "Photos", "rad_gify.gif")
-        gif_label = QtWidgets.QLabel()
-        gif_label.setScaledContents(True)           # scale 
-        gif_label.setFixedSize(200-50, 200-50)            # display dimensions
-        gif_label.setAlignment(Qt.AlignmentFlag.AlignRight)  # 
-        movie = QtGui.QMovie(rad_gify_path)  
-        gif_label.setMovie(movie)
-        movie.start()  # Start the animation
-        Upper_layout.insertWidget(0,gif_label) 
-
-        
-        ### 487 Monogram
-        label_487 = os.path.join(BASE_DIR, "Photos", "lable_487.png")
-        monogram_label_3 = QtWidgets.QLabel()
-        pixmap3 = QPixmap(label_487)        
-        monogram_label_3.setPixmap(pixmap3)                 
-        monogram_label_3.setScaledContents(True)           # scale pixmap to label’s size 
-        monogram_label_3.setFixedSize(400, 100)            # display dimensions
-        monogram_label_3.setAlignment(Qt.AlignmentFlag.AlignCenter)  
-        Upper_layout.insertWidget(0, monogram_label_3) 
-
-
         #Upper_layout.addWidget(Upper_lable)
         ### 487 Monogram
         mono_487 = os.path.join(BASE_DIR, "Photos", "487_mono.png")
@@ -959,6 +937,61 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         monogram_label_2.setAlignment(Qt.AlignmentFlag.AlignRight)  
         Upper_layout.insertWidget(0, monogram_label_2) 
 
+        
+        ### title
+        title_path = os.path.join(BASE_DIR, "Photos", "Title.png")
+        title_label = QtWidgets.QLabel()
+        pixmap3 = QPixmap(title_path)        
+        title_label.setPixmap(pixmap3)                 
+        title_label.setScaledContents(True)           # scale pixmap to label’s size 
+        title_label.setFixedSize(400, 150)            # display dimensions
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
+        Upper_layout.insertWidget(0, title_label) 
+
+
+
+
+        rad_gify_path = os.path.join(BASE_DIR, "Photos", "rad_gify.gif")
+        gif_label = QtWidgets.QLabel()
+        gif_label.setScaledContents(True)           # scale 
+        gif_label.setFixedSize(200-50, 200-50)            # display dimensions
+        gif_label.setAlignment(Qt.AlignmentFlag.AlignRight)  # 
+        movie = QtGui.QMovie(rad_gify_path)  
+        gif_label.setMovie(movie)
+        movie.start()  # Start the animation
+        Upper_layout.insertWidget(0,gif_label) 
+
+
+
+##middle layout
+        middle_layout_1 = QtWidgets.QHBoxLayout()
+
+        ### 487 label
+        label_487 = os.path.join(BASE_DIR, "Photos", "lable_487_2.png")
+        monogram_label_3 = QtWidgets.QLabel()
+        pixmap3 = QPixmap(label_487)        
+        monogram_label_3.setPixmap(pixmap3)                 
+        monogram_label_3.setScaledContents(True)           # scale pixmap to label’s size 
+        monogram_label_3.setFixedSize(300, 70)            # display dimensions
+##        monogram_label_3.setAlignment(Qt.AlignmentFlag.AlignRight)
+        monogram_label_3.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        middle_layout_1.addWidget(monogram_label_3)
+
+        middle_layout_2 = QtWidgets.QVBoxLayout()
+
+##        middle_layout.insertWidget(1, monogram_label_3) 
+
+
+        # Header information with larger fonts
+        header_label = QtWidgets.QLabel("Idea Conceived by: XXX")
+        author_label = QtWidgets.QLabel("Developed by:  Flt Lt M. Ramzan Badini")
+        conceived_label = QtWidgets.QLabel("Aproved by:  xxxx")
+        for label in (header_label, author_label, conceived_label):
+            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet("font-size: 18px; font-weight: bold;")
+            middle_layout_2.addWidget(label)
+
+
         # container widget for buttons
         button_container = QtWidgets.QWidget()
         button_container.setSizePolicy(
@@ -968,84 +1001,123 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         button_container.setMaximumWidth(450)  # Optional cap on width
  
         button_layout = QtWidgets.QHBoxLayout(button_container)  
+        button_layout_L = QtWidgets.QHBoxLayout(button_container)  
 
         button_layout.setSpacing(40)       # space between buttons
-        button_layout.setContentsMargins(0, 0, 0, 0)   # no extra padding
+        button_layout_L.setSpacing(400)       # space between buttons
 
-
-##middle layout
-        middle_layout = QtWidgets.QVBoxLayout()
-
-        # Header information with larger fonts
-        header_label = QtWidgets.QLabel("Idea Conceived by: XXX")
-        author_label = QtWidgets.QLabel("Developed by:  Flt Lt M. Ramzan Badini")
-        conceived_label = QtWidgets.QLabel("Aproved by:  xxxx")
-        for label in (header_label, author_label, conceived_label):
-            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet("font-size: 18px; font-weight: bold;")
-            middle_layout.addWidget(label)
+        button_layout_L.setContentsMargins(0, 0, 0, 15)   # gap from lower 15 pixs 
+        button_layout.setContentsMargins(0, 0, 0, 10)   # gap from lower 15 pixs
 
 
         # Radar system font making
         self.radar1_btn = QtWidgets.QPushButton("Radar Systems", self)
+        self.radar1_btn = self.main_but_style(self.radar1_btn, "#007ACC")
         self.radar1_btn.setMinimumSize(200, 80)
-        self.radar1_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #007ACC;
-                color: black;
-                font-size: 22px;
-                font-weight: bold;
-                border: none;
-                border-radius: 16px;
-                padding: 6px 12px;
-            }
-            QPushButton:hover {
-                background-color: #0056b3;
-            }
-            QPushButton:pressed {
-                background-color: #003f7f;
-            }
-            """)
+        self.radar1_btn.clicked.connect(lambda: self.open_radar_app("RADAR"))
 
-        self.radar1_btn.clicked.connect(lambda: self.open_radar_app("Radar 1"))
-
-
+        # comm system buttoning
         self.radar2_btn = QtWidgets.QPushButton("Comm Systems", self)
+        self.radar2_btn = self.main_but_style(self.radar2_btn, "#5aa539")
         self.radar2_btn.setMinimumSize(200, 80)
-        self.radar2_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #28A745;
-                color: black;
-                font-size: 22px;
-                font-weight: bold;
-                border: none;
-                border-radius: 16px;
-                padding: 6px 12px;
-            }
-            QPushButton:hover {
-                background-color: #157a2c;
-            }
-            QPushButton:pressed {
-                background-color: #0f6523;
-            }
-            """)
-
         self.radar2_btn.clicked.connect(lambda: self.open_radar_app("COMM"))
 
-        button_layout.addWidget(self.radar2_btn)
+        # Electric system buttoning
+        self.radar3_btn = QtWidgets.QPushButton("---", self)
+        self.radar3_btn = self.main_but_style(self.radar3_btn, "#6a6a6a")
+        self.radar3_btn.setMinimumSize(200, 80)
+        self.radar3_btn.clicked.connect(lambda: self.open_other_sys("ELECT"))
+
+        # MTF system buttoning
+        self.radar4_btn = QtWidgets.QPushButton("---", self)
+        self.radar4_btn = self.main_but_style(self.radar4_btn, "#6a6a6a")
+        self.radar4_btn.setMinimumSize(200, 80)
+        self.radar4_btn.clicked.connect(lambda: self.open_other_sys("DnM"))
+
         button_layout.addWidget(self.radar1_btn)
+        button_layout.addWidget(self.radar2_btn)
+
+        button_layout_L.addWidget(self.radar3_btn)
+        button_layout_L.addWidget(self.radar4_btn)
+
+        
+
         button_layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # keeps them at the top of their column
+        button_layout_L.setAlignment(Qt.AlignmentFlag.AlignHCenter)  # keeps them at the top of their column
 
         layout.addLayout(Upper_layout)
 
+        layout.addLayout(middle_layout_1)
+        layout.addLayout(middle_layout_2)
         
-        layout.addLayout(middle_layout)
         layout.addStretch()           # pushes the button column all the way right
 
         layout.addWidget(button_container)
         layout.setAlignment(button_container, Qt.AlignmentFlag.AlignHCenter)   
 
         layout.addLayout(button_layout)
+        layout.addLayout(button_layout_L)
+        
+
+
+    def main_but_style(self, button, color: str):
+        button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {color};
+                color: black;
+                font-size: 22px;
+                font-weight: bold;
+                border: none;
+                border-radius: 16px;
+                padding: 6px 12px;
+                max-width: 120;
+            }}
+            QPushButton:hover {{
+                background-color: #157a2c;
+            }}
+            QPushButton:pressed {{
+                background-color: #0f6523;
+            }}
+            """)
+        return button
+
+
+    def open_other_sys(self, radar_type):
+
+        msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle("Access Denied")
+        msg_box.setText("This system is not A/A yet")
+
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #2b2b2b;
+                border: 1px solid #000000;
+            }
+            QLabel {
+                color: white;
+                font: 12pt "Segoe UI";
+                background-color: transparent;
+                selection-background-color: transparent;
+                selection-color: white;
+            }
+            QPushButton {
+                background-color: #a1a1a1;
+                color: black;
+                padding: 6px 12px;
+                font-weight: bold;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #e67e22;
+            }
+        """)
+
+        msg_box.exec()
+
+
+
+##        QtWidgets.QMessageBox.warning(self, "Access Denied", "System yet to be added")
 
 
     def open_radar_app(self, radar_type):
