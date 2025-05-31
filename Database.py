@@ -18,25 +18,41 @@ class DatabaseManager:
             upload_date TEXT,
             uploader_name TEXT,
             video_path TEXT,
+            docs_path TEXT,
             radar_type TEXT NOT NULL
         )
         """)
 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS Authentication (
-            username TEXT PRIMARY KEY,
-            password TEXT
+            username TEXT PRIMARY KEY DEFAULT 'admin',
+            password TEXT DEFAULT 'admin'
         )
         """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS About_compiler (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                extra_label TEXT DEFAULT 'Extra Info',
+                header_label TEXT DEFAULT 'Header',
+                conceived_label TEXT DEFAULT 'Conceived By',
+                author_label TEXT DEFAULT 'compiler Name'
+            )
+        """)
+
+
+
+
         
+                
         self.conn.commit()
 
-    def insert_system(self, parent_id, system_name, description, upload_date, uploader_name, video_path, radar_type):
+    def insert_system(self, parent_id, system_name, description, upload_date, uploader_name, video_path, docs_path, radar_type):
         cursor = self.conn.cursor()
         cursor.execute("""
-            INSERT INTO systems (parent_id, system_name, description, upload_date, uploader_name, video_path, radar_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (parent_id, system_name, description, upload_date, uploader_name, video_path, radar_type))
+            INSERT INTO systems (parent_id, system_name, description, upload_date, uploader_name, video_path,docs_path, radar_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (parent_id, system_name, description, upload_date, uploader_name, video_path, docs_path, radar_type))
         self.conn.commit()
         return cursor.lastrowid
 
@@ -55,6 +71,7 @@ class DatabaseManager:
 ##        cursor.execute("SELECT * FROM systems ORDER BY id DESC LIMIT 1")
         cursor.execute("SELECT * FROM systems WHERE id = ?", (system_id,))
         return cursor.fetchone()
+    
 
     def delete_systems(self,radar_type, main_id):
         cursor = self.conn.cursor()
@@ -70,7 +87,7 @@ class DatabaseManager:
         self.conn.commit()
 
 
-
+###### combo data manipulation
 
     def combo_data(self,radar_type):
         cursor = self.conn.cursor()
@@ -97,7 +114,18 @@ class DatabaseManager:
 
     def authenticate(self, username):
         cursor = self.conn.cursor()
-##        cursor.execute("SELECT * FROM systems ORDER BY id DESC LIMIT 1")
+        
+        # Check if the table is empty
+        cursor.execute("SELECT COUNT(*) FROM Authentication")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO Authentication (username, password)
+                VALUES (?, ?)
+            """, ("admin", "admin"))
+            self.conn.commit()
+
+        
+        ##        cursor.execute("SELECT * FROM systems ORDER BY id DESC LIMIT 1")
         cursor.execute("SELECT password FROM Authentication WHERE username = ?", (username,))
         return cursor.fetchone()
 
@@ -109,7 +137,7 @@ class DatabaseManager:
 
     def update_user(self, new_username, new_password, old_username, old_password):
         cursor = self.conn.cursor()
-##        cursor.execute("DELETE FROM systems WHERE id=?", (system_id,))
+        ##        cursor.execute("DELETE FROM systems WHERE id=?", (system_id,))
 
         cursor.execute("""
             UPDATE Authentication
@@ -119,12 +147,64 @@ class DatabaseManager:
         
         self.conn.commit()
 
+####### fetching for editings
+    def fetch_for_edit(self, system_name):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM systems WHERE system_name = ?", (system_name,))
+        return cursor.fetchone()
+        
+    def edit_system(self, sys_id, parent_id, system_name, description, upload_date, uploader_name, video_path, docs_path, radar_type):
+        cursor = self.conn.cursor()
+        ##        cursor.execute("DELETE FROM systems WHERE id=?", (system_id,))
+
+        cursor.execute("""
+            UPDATE systems
+            SET parent_id = ?, system_name = ?, description = ?, upload_date = ?, uploader_name = ?, video_path = ?, docs_path = ?, radar_type = ?
+            WHERE id = ?
+        """, (parent_id, system_name, description, upload_date, uploader_name, video_path, docs_path, radar_type, sys_id))
+        
+        self.conn.commit()
+
+###### adding labels
+        
+    def update_labels(self, values):       
+        cursor = self.conn.cursor()
+        # Check if the table is empty
+        cursor.execute("SELECT COUNT(*) FROM About_compiler")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO About_compiler (extra_label, header_label, conceived_label, author_label)
+                VALUES (?, ?, ?, ?)
+            """, ("Extra Info", "Header", "Conceived By", "Author Name"))
+            self.conn.commit()
+        
+        cursor.execute("""
+            UPDATE About_compiler
+            SET extra_label = ?, header_label = ?, conceived_label = ?, author_label = ?
+            WHERE id = ?
+        """, (values[0], values[1], values[2], values[3], 1))
+
+        self.conn.commit()
+            
+##        """, (values[0], values[1], values[2], values[3]))
+##        self.conn.commit()
+##        return cursor.lastrowid
+
+    def get_compiler_labels(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT extra_label, header_label, conceived_label, author_label FROM About_compiler LIMIT 1")
+        row = cursor.fetchone()
+        return row if row else ("", "", "", "")
+
 
 ### the practice area
-##    
+##  
 ##db = DatabaseManager("radar_systems.db")
-##result = db.get_user_password("balochi")
-##print (result)
+##lis = [8,11,12,13,17,18,19,20,24,29,32,33]
+##for i in lis:
+##    result = db.delete_systems("Radar 1", i)        #self,radar_type, main_id
+########_, parent_id, system_name, description, upload_date, uploader_name, video_path, radar_type = result
+##print ()
 
 ##db = DatabaseManager("radar_systems.db")
 ##print(db.update_user("balochi", "kings", "ramzee", "1234"))
