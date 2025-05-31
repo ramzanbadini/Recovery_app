@@ -12,6 +12,32 @@ from PyQt6.QtCore import Qt
 master_key = "ramzee"
 master_password = "1234"
 
+###### handling the labels
+class InputDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("About window")
+        self.layout = QtWidgets.QFormLayout(self)
+
+        # Create 4 QLineEdits
+        self.inputs = [QtWidgets.QLineEdit(self) for _ in range(4)]
+        for i, line_edit in enumerate(self.inputs):
+            self.layout.addRow(f"Label {i+1}:", line_edit)
+
+        # OK/Cancel buttons
+        self.button_box = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.layout.addRow(self.button_box)
+
+    def get_values(self):
+        return [line_edit.text() for line_edit in self.inputs]
+
+
+######## login dialogs
+
 class LoginDialog(QtWidgets.QDialog):
     def __init__(self, radar_type, db_manager, parent=None):
         super().__init__(parent)
@@ -169,7 +195,7 @@ class UploadDialog(QtWidgets.QDialog):
         self.radar_type = radar_type
         self.db_manager = db_manager
         self.setWindowTitle("Upload New System")
-        self.resize(600, 500)
+        self.resize(600, 550)
 
         self.init_ui()
 
@@ -267,12 +293,29 @@ class UploadDialog(QtWidgets.QDialog):
         file_layout.addWidget(self.video_path_edit)
         browse_btn = QtWidgets.QPushButton("Browse", self)
         browse_btn = self.button_style(browse_btn, "#346e1b")
-        
-
-        
+               
         browse_btn.clicked.connect(self.browse_video)
+
         file_layout.addWidget(browse_btn)
+
         layout.addLayout(file_layout)
+        
+#### Documents addition in the description
+        ref_doc_layout = QtWidgets.QHBoxLayout()
+        ref_doc_layout.addWidget(QtWidgets.QLabel("Upload Ref Document: "))
+
+        self.Document_path_edit = QtWidgets.QLineEdit(self)
+        self.Document_path_edit.setFixedWidth(300)  # Fix width
+        self.Document_path_edit.setPlaceholderText("Select referrence documnet")
+        ref_doc_layout.addWidget(self.Document_path_edit)
+        docs_btn = QtWidgets.QPushButton("Browse", self)
+        docs_btn = self.button_style(docs_btn, "#346e1b")
+               
+        docs_btn.clicked.connect(self.browse_docs)
+
+        ref_doc_layout.addWidget(docs_btn)
+
+        layout.addLayout(ref_doc_layout)
 
 ###### separator line
 
@@ -342,7 +385,39 @@ class UploadDialog(QtWidgets.QDialog):
                 # Set the new path in the QLineEdit
                 self.video_path_edit.setText(destination_path)
                 print(destination_path)
-                
+
+
+    def browse_docs(self):
+
+        file_dialog = QtWidgets.QFileDialog(self)
+        file_dialog.setNameFilter("Documents (*.pdf *.doc *.docx *.ppt *.pptx)")        
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            if selected_files:
+                source_path = os.path.abspath(selected_files[0])  # Absolute path of selected file
+                file_name = os.path.basename(source_path)
+
+                # Define Videos folder relative to Main_app.py location
+                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                Docs_dir = os.path.join(base_dir, "Documents")
+
+                # Create Videos folder if it doesn't exist
+                os.makedirs(Docs_dir, exist_ok=True)
+
+                # Destination path
+                destination_path = os.path.join(Docs_dir, file_name)
+
+                #until the video is copying
+                self.Document_path_edit.setText("Copying, please wait...")
+                QtWidgets.QApplication.processEvents()  # Force UI to update immediately
+
+                # Copy only if it's not already in the Videos folder
+                if source_path != destination_path:
+                    shutil.copy2(source_path, destination_path)
+
+                # Set the new path in the QLineEdit
+                self.Document_path_edit.setText(destination_path)
+                print(destination_path)                
 
     def get_upload_data(self):
         parent_id = self.parent_combo.currentData()  # Eacg sub_sys will have a parent ID and for top level that would be none
@@ -353,9 +428,277 @@ class UploadDialog(QtWidgets.QDialog):
             "upload_date": self.upload_date_edit.date().toString(QtCore.Qt.DateFormat.ISODate),
             "uploader_name": self.uploader_name_edit.text(),
             "video_path": self.video_path_edit.text(),
+            "docs_path" : self.Document_path_edit.text(),
             "radar_type": self.radar_type
         }
 
+#####################################################
+
+## uploading data diaglloge
+class open_edit_dialog(QtWidgets.QDialog):
+    def __init__(self, radar_type, db_manager, item, parent=None):
+        super().__init__(parent)
+        self.radar_type = radar_type
+        self.db_manager = db_manager
+        self.item = item.text(0)
+        self.setWindowTitle(f"Edit {self.item}")
+        self.resize(600, 500)        
+
+        self.init_ui()
+
+    def init_ui(self):
+       # print (self.item)
+        if "-" in self.item:
+            self.item = self.item.lstrip("-").strip()
+
+        fetched_data = self.db_manager.fetch_for_edit(self.item)
+        self.sys_id, self.parent_id, self.system_name, self.description, self.upload_date, self.uploader_name, self.video_path, self.docs_path, self.radar_type = fetched_data
+    
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        label = QtWidgets.QLabel(f"Edit Details of {self.item} ")
+        label.setStyleSheet("""
+            QLabel {
+                font-size: 16pt;
+                font-weight: bold;
+                color: #2C3E50;
+                font-family: 'Segoe UI', sans-serif;
+            }
+        """)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center the label
+        layout.addWidget(label)
+
+        
+## system laoyt
+        new_sys_layout = QtWidgets.QHBoxLayout()
+        new_sys_layout.addWidget(QtWidgets.QLabel("New Equipment"))
+        # System name
+        #self.system_name_edit = QtWidgets.QLineEdit(self)
+        self.system_name_edit = QtWidgets.QLineEdit(self.system_name, self)
+
+
+        
+        self.system_name_edit.setFixedWidth(400)  # Fix width
+
+        self.system_name_edit.setPlaceholderText("System Name")
+        new_sys_layout.addWidget(self.system_name_edit)
+
+##parent laout
+        # Parent system selection
+
+        exi_layout = QtWidgets.QHBoxLayout()
+        exi_layout.addWidget(QtWidgets.QLabel(""))
+        
+##        self.parent_combo = QtWidgets.QComboBox(self)
+##        self.parent_combo.setFixedWidth(400)  # Fix width
+##        self.parent_combo.addItem("New", userData=None)
+        
+        # Populate with top-level systems of this radar type
+
+##        for sys_id, name in self.db_manager.get_top_level_systems(self.radar_type):
+##            self.parent_combo.addItem(name, userData=sys_id)
+##
+
+        #exi_layout.addWidget(QtWidgets.QLabel("Parent System (optional):"))
+##        exi_layout.addWidget(self.parent_combo)
+
+        layout.addLayout(new_sys_layout)
+        layout.addLayout(exi_layout)
+
+
+
+        # Description
+        self.description_edit = QtWidgets.QTextEdit(self)
+        self.description_edit.setHtml(self.description)
+        #self.description_edit.toPlainText()
+        #self.description_edit.setPlaceholderText("Description/Rectification Steps")
+##        self.description_edit.toHtml()
+        layout.addWidget(self.description_edit)
+
+#### the datelaoyt
+        date_layout = QtWidgets.QHBoxLayout()
+
+        # Upload date
+        self.upload_date_edit = QtWidgets.QDateEdit(self)
+        self.upload_date_edit.setFixedWidth(400)  # Fix width
+        self.upload_date_edit.setCalendarPopup(True)
+        self.upload_date_edit.setDate(QtCore.QDate.currentDate())
+        date_layout.addWidget(QtWidgets.QLabel("Upload Date:"))
+        date_layout.addWidget(self.upload_date_edit)
+
+        layout.addLayout(date_layout)
+
+###### uploadername layout
+        uploader_layout = QtWidgets.QHBoxLayout()
+        
+        # Uploader name
+        uploader_layout.addWidget(QtWidgets.QLabel("Uploaded by :"))
+        
+        self.uploader_name_edit = QtWidgets.QLineEdit(self.uploader_name)
+        self.uploader_name_edit.setFixedWidth(400)  # Fix width
+        #self.uploader_name_edit.setPlaceholderText("Uploader Name")
+        uploader_layout.addWidget(self.uploader_name_edit)
+
+        layout.addLayout(uploader_layout)
+
+###### video path layout
+        # Video file selection
+        file_layout = QtWidgets.QHBoxLayout()
+
+        file_layout.addWidget(QtWidgets.QLabel("Upload Video: "))
+        self.video_path_edit = QtWidgets.QLineEdit(self.video_path)
+
+        self.video_path_edit.setFixedWidth(300)  # Fix width
+        self.video_path_edit.setPlaceholderText("Select MP4 Video")
+        file_layout.addWidget(self.video_path_edit)
+        browse_btn = QtWidgets.QPushButton("Browse", self)
+        browse_btn = self.button_style(browse_btn, "#346e1b")
+        
+
+        
+        browse_btn.clicked.connect(self.browse_video)
+        file_layout.addWidget(browse_btn)
+        layout.addLayout(file_layout)
+
+#### Documents addition in the description
+        ref_doc_layout = QtWidgets.QHBoxLayout()
+        ref_doc_layout.addWidget(QtWidgets.QLabel("Upload Ref Document: "))
+        self.Document_path_edit = QtWidgets.QLineEdit(self.docs_path)        
+        self.Document_path_edit.setFixedWidth(300)  # Fix width
+        self.Document_path_edit.setPlaceholderText("Select referrence documnet")
+        ref_doc_layout.addWidget(self.Document_path_edit)
+        docs_btn = QtWidgets.QPushButton("Browse", self)
+        docs_btn = self.button_style(docs_btn, "#346e1b")
+               
+        docs_btn.clicked.connect(self.browse_docs)
+
+        ref_doc_layout.addWidget(docs_btn)
+
+        layout.addLayout(ref_doc_layout)
+
+
+
+###### separator line
+
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        layout.addWidget(line)
+
+        # Dialog buttons: Submit and Cancel
+        btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok |
+                                             QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        btn_box = self.button_style(btn_box, "#2778b4")        
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        layout.addWidget(btn_box)
+
+
+    def button_style(self, button, color: str):
+        button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {color};
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                padding: 6px 6px;           /* reduced from 16px to 12px */
+                border-radius: 6px;
+                min-width: 60px;             /* adjust this */
+                max-width: 90px;            /* optional cap */
+            }}
+            QPushButton:hover {{
+                background-color: #257526;
+            }}
+            QPushButton:pressed {{
+                background-color: #2471a3;
+            }}
+        """)
+        return button
+
+    def browse_video(self):
+        file_dialog = QtWidgets.QFileDialog(self)
+        file_dialog.setNameFilter("MP4 files (*.mp4)")
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            if selected_files:
+                source_path = os.path.abspath(selected_files[0])  # Absolute path of selected file
+                file_name = os.path.basename(source_path)
+
+                # Define Videos folder relative to Main_app.py location
+                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                videos_dir = os.path.join(base_dir, "Videos")
+
+                # Create Videos folder if it doesn't exist
+                os.makedirs(videos_dir, exist_ok=True)
+
+                # Destination path
+                destination_path = os.path.join(videos_dir, file_name)
+
+                #until the video is copying
+                self.video_path_edit.setText("Copying, please wait...")
+                QtWidgets.QApplication.processEvents()  # Force UI to update immediately
+
+                # Copy only if it's not already in the Videos folder
+                if source_path != destination_path:
+                    shutil.copy2(source_path, destination_path)
+
+                # Set the new path in the QLineEdit
+                self.video_path_edit.setText(destination_path)
+                print(destination_path)
+
+    def browse_docs(self):
+
+        file_dialog = QtWidgets.QFileDialog(self)
+        file_dialog.setNameFilter("Documents (*.pdf *.doc *.docx *.ppt *.pptx)")        
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            if selected_files:
+                source_path = os.path.abspath(selected_files[0])  # Absolute path of selected file
+                file_name = os.path.basename(source_path)
+
+                # Define Videos folder relative to Main_app.py location
+                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                Docs_dir = os.path.join(base_dir, "Documents")
+
+                # Create Videos folder if it doesn't exist
+                os.makedirs(Docs_dir, exist_ok=True)
+
+                # Destination path
+                destination_path = os.path.join(Docs_dir, file_name)
+
+                #until the video is copying
+                self.Document_path_edit.setText("Copying, please wait...")
+                QtWidgets.QApplication.processEvents()  # Force UI to update immediately
+
+                # Copy only if it's not already in the Videos folder
+                if source_path != destination_path:
+                    shutil.copy2(source_path, destination_path)
+
+                # Set the new path in the QLineEdit
+                self.Document_path_edit.setText(destination_path)
+                print(destination_path)                
+
+                
+
+    def get_update_data(self):
+        sys_id =  self.sys_id
+        parent_id = self.parent_id #self.parent_combo.currentData()  # Eacg sub_sys will have a parent ID and for top level that would be none
+        return {
+            "id": self.sys_id,
+            "parent_id": parent_id,
+            "system_name": self.system_name_edit.text(),
+            "description": self.description_edit.toHtml(),  #toPlainText(),
+            "upload_date": self.upload_date_edit.date().toString(QtCore.Qt.DateFormat.ISODate),
+            "uploader_name": self.uploader_name_edit.text(),
+            "video_path": self.video_path_edit.text(),
+            "docs_path": self.Document_path_edit.text(),            
+            "radar_type": self.radar_type
+        }
+
+
+#####################################################
 class RemoveDialog(QtWidgets.QDialog):
     def __init__(self, radar_type, db_manager, parent=None):
         super().__init__(parent)
@@ -587,6 +930,7 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
 
 
     def init_ui(self):
+        
         # Create main widget and a horizontal splitter for left (tree) and right (content)
         central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(central_widget)
@@ -637,6 +981,8 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         left_layout.addWidget(self.search_bar)
 
         self.tree = QtWidgets.QTreeWidget(self)
+        self.tree.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.open_context_menu)        
         self.tree.setHeaderHidden(True)
         self.tree.setIndentation(15)  # Default is usually 20
         left_layout.addWidget(self.tree)
@@ -664,13 +1010,35 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
 
         self.content_splitter.addWidget(groupBox)
 
+####### the hyper
+        # Create a small clickable document label
+        ref_layout  = QtWidgets.QHBoxLayout()
+        
+        self.doc_link_label = QtWidgets.QLabel()
+        self.doc_link_label.setText("📄 No document selected")
+        self.doc_link_label.setOpenExternalLinks(True)
+        self.doc_link_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction
+        )
+        self.doc_link_label.setStyleSheet("color: blue; text-decoration: underline;")
+        self.doc_link_label.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.doc_link_label.setSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
+
+        self.doc_label = QtWidgets.QLabel()
+        self.doc_label.setText("Reference Documents: ")
+
+        ref_layout.addStretch(3)
+        ref_layout.addWidget(self.doc_label, alignment=Qt.AlignmentFlag.AlignRight)
+        ref_layout.addWidget(self.doc_link_label, alignment=Qt.AlignmentFlag.AlignRight)
+        groupLayout.addLayout(ref_layout)
+
+##        groupLayout.addWidget(self.doc_link_label)  # Add above the splitter
 
         add_rem_layout = QtWidgets.QHBoxLayout()
 
         # Upload Button
         self.Upload_button = self.but_style("Upload", "#4a8349")
         self.Upload_button.clicked.connect(lambda: self.request_login("upload"))
-
         
 ##        self.Upload_button.clicked.connect(self.request_login, "upload")
         add_rem_layout.addWidget(self.Upload_button)
@@ -707,29 +1075,40 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         self.status = self.statusBar()
         self.update_status("No system selected", "", "")
 
-        # Menu Bar: Upload and Home actions
-##        menu = self.menuBar()
-##        file_menu = menu.addMenu("File")
-##        upload_action = QtGui.QAction("Upload", self)
-##        upload_action.triggered.connect(self.open_upload_dialog)
-##        file_menu.addAction(upload_action)
-##
-##        remove_action = QtGui.QAction("Remove", self)
-##        remove_action.triggered.connect(self.open_remove_dialog)
-##        file_menu.addAction(remove_action)
-##
-##        home_action = QtGui.QAction("Home", self)
-##        home_action.triggered.connect(self.go_home)
-##        file_menu.addAction(home_action)
-
-        # Connect tree view selection and search bar
         self.tree.itemClicked.connect(self.tree_item_clicked)
         self.search_bar.textChanged.connect(self.filter_tree)
 
         # Populate tree from database
         self.populate_tree()
 
+    def open_context_menu(self, position):
+        
+        item = self.tree.itemAt(position)
+        if item is None:
+            return  # Clicked on empty area, do nothing
+        
+        menu = QtWidgets.QMenu()
+        edit_action = menu.addAction("Edit System")
+        action = menu.exec(self.tree.viewport().mapToGlobal(position))
 
+        if item.text(0):
+            if action == edit_action:
+                dialog = open_edit_dialog(self.radar_type, self.db_manager, item, self)
+                if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+                    data = dialog.get_update_data()
+                    # update the sys details in the database
+                    self.db_manager.edit_system(data["id"], data["parent_id"], data["system_name"],
+                                                  data["description"], data["upload_date"],
+                                                  data["uploader_name"], data["video_path"],
+                                                  data["docs_path"], data["radar_type"])
+                    QtWidgets.QMessageBox.information(self, "Upload", "New system uploaded successfully!")
+                    # Refresh tree view to reflect new data
+                    self.populate_tree()
+                #self.open_edit_dialog(item)
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "System not available")
+            
+            
     def but_style(self, text, color: str):
         self.button = QtWidgets.QPushButton(text)
 
@@ -795,20 +1174,20 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         details = self.db_manager.get_system_details(system_id)
         if details:
             # Unpack details (columns: id, parent_id, system_name, description, upload_date, uploader_name, video_path, radar_type)
-            _, _, system_name, description, upload_date, uploader_name, video_path, _ = details
+            _, _, system_name, description, upload_date, uploader_name, video_path, docs_path, _ = details
             self.text_description.setHtml(description)
             self.update_status(system_name, upload_date, uploader_name)
             self.video_player.load_video(video_path)
+            if docs_path:
+                file_name = os.path.basename(docs_path)
+                file_name = file_name.replace("\\", "/")
 
-##    def filter_tree(self, text):
-##        # Simple filtering: iterate over top-level items and hide those that don't match.
-##        root = self.tree.invisibleRootItem()
-##        child_count = root.childCount()
-##        for i in range(child_count):
-##            item = root.child(i)
-##            match = text.lower() in item.text(0).lower()
-##            item.setHidden(not match)
-##            # Could be enhanced to search recursively over all children.
+                print(file_name)
+
+                self.doc_link_label.setText(f'<a href="file:///{docs_path}">📄 {file_name}</a>')
+##            self.doc_link_label.setText(f'<a href="file:///{doc_path}">📄 {file_name}</a>')
+
+            
 
     def filter_tree(self, text):
         def search_item(item, text):
@@ -872,7 +1251,7 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
             self.db_manager.insert_system(data["parent_id"], data["system_name"],
                                           data["description"], data["upload_date"],
                                           data["uploader_name"], data["video_path"],
-                                          data["radar_type"])
+                                          data["docs_path"], data["radar_type"])
             QtWidgets.QMessageBox.information(self, "Upload", "New system uploaded successfully!")
             # Refresh tree view to reflect new data
             self.populate_tree()
@@ -903,14 +1282,17 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         self.showMaximized()
 
     def init_ui(self):
+
+    # Set up keyboard shortcut (e.g., Ctrl+I)
+        shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+I"), self)
+        shortcut.activated.connect(self.open_input_dialog)
+            
         central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(central_widget)
 
-      
         layout = QtWidgets.QVBoxLayout(central_widget)
         layout.setContentsMargins(10, 10, 10, 10)  # adjust as needed
       #  layout.setSpacing(20)                      # space between left and right
-
 
         Upper_layout =QtWidgets.QHBoxLayout()
         Upper_layout.setSpacing(250)       # space between buttons
@@ -949,8 +1331,6 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         Upper_layout.insertWidget(0, title_label) 
 
 
-
-
         rad_gify_path = os.path.join(BASE_DIR, "Photos", "rad_gify.gif")
         gif_label = QtWidgets.QLabel()
         gif_label.setScaledContents(True)           # scale 
@@ -960,8 +1340,6 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         gif_label.setMovie(movie)
         movie.start()  # Start the animation
         Upper_layout.insertWidget(0,gif_label) 
-
-
 
 ##middle layout
         middle_layout_1 = QtWidgets.QHBoxLayout()
@@ -977,20 +1355,24 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         monogram_label_3.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         middle_layout_1.addWidget(monogram_label_3)
 
-        middle_layout_2 = QtWidgets.QVBoxLayout()
-
-##        middle_layout.insertWidget(1, monogram_label_3) 
-
-
+        self.middle_layout_2 = QtWidgets.QVBoxLayout()
+        
         # Header information with larger fonts
-        header_label = QtWidgets.QLabel("Idea Conceived by: XXX")
-        author_label = QtWidgets.QLabel("Developed by:  Flt Lt M. Ramzan Badini")
-        conceived_label = QtWidgets.QLabel("Aproved by:  xxxx")
-        for label in (header_label, author_label, conceived_label):
-            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet("font-size: 18px; font-weight: bold;")
-            middle_layout_2.addWidget(label)
+##        extra_label = QtWidgets.QLabel("")        
+##        header_label = QtWidgets.QLabel("Idea Conceived by: XXX")
+##        author_label = QtWidgets.QLabel("Developed by:  Flt Lt M. Ramzan Badini")
+##        conceived_label = QtWidgets.QLabel("Aproved by:  xxxx")
 
+        
+##        for label in (extra_label, header_label, author_label, conceived_label):
+##            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+##            label.setStyleSheet("font-size: 18px; font-weight: bold;")
+##            middle_layout_2.addWidget(label)
+
+
+        about_labels = self.db_manager.get_compiler_labels()
+        print(about_labels)
+        self.add_labels(about_labels)
 
         # container widget for buttons
         button_container = QtWidgets.QWidget()
@@ -1038,9 +1420,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         button_layout.addWidget(self.radar2_btn)
 
         button_layout_L.addWidget(self.radar3_btn)
-        button_layout_L.addWidget(self.radar4_btn)
-
-        
+        button_layout_L.addWidget(self.radar4_btn)        
 
         button_layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # keeps them at the top of their column
         button_layout_L.setAlignment(Qt.AlignmentFlag.AlignHCenter)  # keeps them at the top of their column
@@ -1048,7 +1428,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         layout.addLayout(Upper_layout)
 
         layout.addLayout(middle_layout_1)
-        layout.addLayout(middle_layout_2)
+        layout.addLayout(self.middle_layout_2)
         
         layout.addStretch()           # pushes the button column all the way right
 
@@ -1056,10 +1436,37 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         layout.setAlignment(button_container, Qt.AlignmentFlag.AlignHCenter)   
 
         layout.addLayout(button_layout)
-        layout.addLayout(button_layout_L)
+        layout.addLayout(button_layout_L)      
+
+###### for handling the about lables
+    def open_input_dialog(self):
+        dialog = InputDialog(self)
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            values = dialog.get_values()
+            print(values)
+            self.db_manager.update_labels(values)
+            
+            self.add_labels(values)
+            
+            
+    def add_labels(self, values):
+        ## delete previous lables form layout middle layout 
+        while self.middle_layout_2.count():
+            child = self.middle_layout_2.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()        
         
+        # Header information with larger fonts
+        extra_label = QtWidgets.QLabel(values[0])        
+        header_label = QtWidgets.QLabel(values[1])
+        author_label = QtWidgets.QLabel(values[2])
+        conceived_label = QtWidgets.QLabel(values[3])
+        for label in (extra_label, header_label, author_label, conceived_label):
+            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet("font-size: 18px; font-weight: bold;")
+            self.middle_layout_2.addWidget(label)            
 
-
+########  setting-up button style
     def main_but_style(self, button, color: str):
         button.setStyleSheet(f"""
             QPushButton {{
@@ -1115,10 +1522,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 
         msg_box.exec()
 
-
-
 ##        QtWidgets.QMessageBox.warning(self, "Access Denied", "System yet to be added")
-
 
     def open_radar_app(self, radar_type):
         self.radar_window = RadarAppMainWindow(radar_type, self.db_manager, parent=self)
