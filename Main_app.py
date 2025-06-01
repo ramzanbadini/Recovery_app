@@ -188,6 +188,13 @@ class ChangePasswordDialog(QtWidgets.QDialog):
 
 
 
+def get_base_path():
+    if getattr(sys, 'frozen', False):  # Running from compiled .exe
+        return os.path.dirname(sys.executable)
+    else:  # Running from .py file
+        return os.path.dirname(os.path.abspath(__file__))
+
+
 ## uploading data diaglloge
 class UploadDialog(QtWidgets.QDialog):
     def __init__(self, radar_type, db_manager, parent=None):
@@ -364,8 +371,8 @@ class UploadDialog(QtWidgets.QDialog):
                 source_path = os.path.abspath(selected_files[0])  # Absolute path of selected file
                 file_name = os.path.basename(source_path)
 
-                # Define Videos folder relative to Main_app.py location
-                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                # Use correct base path based on whether running as .py or .exe
+                base_dir = get_base_path()
                 videos_dir = os.path.join(base_dir, "Videos")
 
                 # Create Videos folder if it doesn't exist
@@ -374,50 +381,49 @@ class UploadDialog(QtWidgets.QDialog):
                 # Destination path
                 destination_path = os.path.join(videos_dir, file_name)
 
-                #until the video is copying
+                # Notify user while copying
                 self.video_path_edit.setText("Copying, please wait...")
                 QtWidgets.QApplication.processEvents()  # Force UI to update immediately
 
-                # Copy only if it's not already in the Videos folder
+                # Copy only if not already there
                 if source_path != destination_path:
                     shutil.copy2(source_path, destination_path)
 
-                # Set the new path in the QLineEdit
-                self.video_path_edit.setText(destination_path)
+                # Set final path in QLineEdit
+                self.video_path_edit.setText(file_name)
                 print(destination_path)
 
 
     def browse_docs(self):
-
         file_dialog = QtWidgets.QFileDialog(self)
-        file_dialog.setNameFilter("Documents (*.pdf *.doc *.docx *.ppt *.pptx)")        
+        file_dialog.setNameFilter("Documents (*.pdf *.doc *.docx *.ppt *.pptx)")
         if file_dialog.exec():
             selected_files = file_dialog.selectedFiles()
             if selected_files:
                 source_path = os.path.abspath(selected_files[0])  # Absolute path of selected file
                 file_name = os.path.basename(source_path)
 
-                # Define Videos folder relative to Main_app.py location
-                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
-                Docs_dir = os.path.join(base_dir, "Documents")
+                # Use fixed base path method
+                base_dir = get_base_path()  # <-- use this, not __file__
+                docs_dir = os.path.join(base_dir, "Documents")
 
-                # Create Videos folder if it doesn't exist
-                os.makedirs(Docs_dir, exist_ok=True)
+                # Create Documents folder if it doesn't exist
+                os.makedirs(docs_dir, exist_ok=True)
 
                 # Destination path
-                destination_path = os.path.join(Docs_dir, file_name)
+                destination_path = os.path.join(docs_dir, file_name)
 
-                #until the video is copying
+                # Notify user while copying
                 self.Document_path_edit.setText("Copying, please wait...")
-                QtWidgets.QApplication.processEvents()  # Force UI to update immediately
+                QtWidgets.QApplication.processEvents()  # Update UI
 
-                # Copy only if it's not already in the Videos folder
+                # Copy only if not already in destination folder
                 if source_path != destination_path:
                     shutil.copy2(source_path, destination_path)
 
-                # Set the new path in the QLineEdit
-                self.Document_path_edit.setText(destination_path)
-                print(destination_path)                
+                # Set new path in QLineEdit
+                self.Document_path_edit.setText(file_name)
+                #print(destination_path)
 
     def get_upload_data(self):
         parent_id = self.parent_combo.currentData()  # Eacg sub_sys will have a parent ID and for top level that would be none
@@ -470,7 +476,7 @@ class open_edit_dialog(QtWidgets.QDialog):
         layout.addWidget(label)
 
         
-## system laoyt
+        ## system laoyt
         new_sys_layout = QtWidgets.QHBoxLayout()
         new_sys_layout.addWidget(QtWidgets.QLabel("New Equipment"))
         # System name
@@ -484,7 +490,7 @@ class open_edit_dialog(QtWidgets.QDialog):
         self.system_name_edit.setPlaceholderText("System Name")
         new_sys_layout.addWidget(self.system_name_edit)
 
-##parent laout
+        ##parent laout
         # Parent system selection
 
         exi_layout = QtWidgets.QHBoxLayout()
@@ -513,10 +519,10 @@ class open_edit_dialog(QtWidgets.QDialog):
         self.description_edit.setHtml(self.description)
         #self.description_edit.toPlainText()
         #self.description_edit.setPlaceholderText("Description/Rectification Steps")
-##        self.description_edit.toHtml()
+        ##        self.description_edit.toHtml()
         layout.addWidget(self.description_edit)
 
-#### the datelaoyt
+        #### the datelaoyt
         date_layout = QtWidgets.QHBoxLayout()
 
         # Upload date
@@ -529,7 +535,7 @@ class open_edit_dialog(QtWidgets.QDialog):
 
         layout.addLayout(date_layout)
 
-###### uploadername layout
+        ###### uploadername layout
         uploader_layout = QtWidgets.QHBoxLayout()
         
         # Uploader name
@@ -627,7 +633,7 @@ class open_edit_dialog(QtWidgets.QDialog):
                 file_name = os.path.basename(source_path)
 
                 # Define Videos folder relative to Main_app.py location
-                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                base_dir = get_base_path()
                 videos_dir = os.path.join(base_dir, "Videos")
 
                 # Create Videos folder if it doesn't exist
@@ -645,7 +651,7 @@ class open_edit_dialog(QtWidgets.QDialog):
                     shutil.copy2(source_path, destination_path)
 
                 # Set the new path in the QLineEdit
-                self.video_path_edit.setText(destination_path)
+                self.video_path_edit.setText(file_name)
                 print(destination_path)
 
     def browse_docs(self):
@@ -659,7 +665,7 @@ class open_edit_dialog(QtWidgets.QDialog):
                 file_name = os.path.basename(source_path)
 
                 # Define Videos folder relative to Main_app.py location
-                base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where Main_app.py is located
+                base_dir = get_base_path()  # <-- use this, not __file__
                 Docs_dir = os.path.join(base_dir, "Documents")
 
                 # Create Videos folder if it doesn't exist
@@ -677,7 +683,7 @@ class open_edit_dialog(QtWidgets.QDialog):
                     shutil.copy2(source_path, destination_path)
 
                 # Set the new path in the QLineEdit
-                self.Document_path_edit.setText(destination_path)
+                self.Document_path_edit.setText(file_name)
                 print(destination_path)                
 
                 
@@ -1177,14 +1183,24 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
             _, _, system_name, description, upload_date, uploader_name, video_path, docs_path, _ = details
             self.text_description.setHtml(description)
             self.update_status(system_name, upload_date, uploader_name)
-            self.video_player.load_video(video_path)
+
+            # Use fixed base path method
+            base_dir = get_base_path()  # <-- gets the path thru function
+            VID_FOLDER = os.path.join(base_dir, 'Videos')
+            final_vid_path = os.path.join(VID_FOLDER, video_path)
+            
+            self.video_player.load_video(final_vid_path)
+            
             if docs_path:
-                file_name = os.path.basename(docs_path)
+                Docs_FOLDER = os.path.join(base_dir, 'Documents')
+                final_doc_path = os.path.join(Docs_FOLDER, docs_path)
+                
+                file_name = os.path.basename(final_doc_path)
                 file_name = file_name.replace("\\", "/")
 
                 print(file_name)
 
-                self.doc_link_label.setText(f'<a href="file:///{docs_path}">📄 {file_name}</a>')
+                self.doc_link_label.setText(f'<a href="file:///{final_doc_path}">📄 {file_name}</a>')
 ##            self.doc_link_label.setText(f'<a href="file:///{doc_path}">📄 {file_name}</a>')
 
             
