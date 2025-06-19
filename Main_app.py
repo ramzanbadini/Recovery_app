@@ -4,6 +4,7 @@ import shutil
 from Database import DatabaseManager
 from Multimedia import VideoPlayerWidget
 from Multimedia import CustomVideoWidget
+from AI_chatbot import ChatBotWindow
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtCore import QSize
 from PyQt6 import QtWidgets, QtCore, QtGui, QtMultimedia, QtMultimediaWidgets
@@ -1290,22 +1291,39 @@ class MainMenuWindow(QtWidgets.QMainWindow):
     def __init__(self, db_manager):
         super().__init__()
         self.db_manager = db_manager
-        self.setWindowTitle("Radar Recovery Software - Main Menu")
+        self.setWindowTitle("Maintenance Digital Library - Main Menu")
         self.setStyleSheet("background-color: #B4f96D;")  # Light blue background
+
+        print("Window Size:", self.size())             # QSize(w, h)
 
         #self.setMinimumSize(700, 500)
         self.init_ui()
         self.showMaximized()
 
     def init_ui(self):
+        ## abs path for all pics and images icons
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    # Set up keyboard shortcut (e.g., Ctrl+I)
+    # Set up keyboard shortcut (e.g., Ctrl+I) for labels change
         shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+I"), self)
         shortcut.activated.connect(self.open_input_dialog)
-            
-        central_widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(central_widget)
+        
 
+        ## the background
+        bg_image_path = os.path.join(BASE_DIR, "Photos", "bg.jpg").replace("\\", "/")
+        print(bg_image_path)
+
+        central_widget = QtWidgets.QWidget(self)
+        central_widget.setObjectName("central")
+        self.setCentralWidget(central_widget)
+        central_widget.setStyleSheet(f"""
+            QWidget#central {{
+                background-image: url("{bg_image_path}");
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: cover;
+            }}
+        """) 
         layout = QtWidgets.QVBoxLayout(central_widget)
         layout.setContentsMargins(10, 10, 10, 10)  # adjust as needed
       #  layout.setSpacing(20)                      # space between left and right
@@ -1313,32 +1331,23 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         Upper_layout =QtWidgets.QHBoxLayout()
         Upper_layout.setSpacing(250)       # space between buttons
 
-        ### Wessec Monogram
-##        monogram_label_1 = QtWidgets.QLabel()
-##        pixmap1 = QPixmap(r"C:\Users\PMYLS\Documents\radar_recovery\487_mono.png")        
-##        monogram_label_1.setPixmap(pixmap1)                 
-##        monogram_label_1.setScaledContents(True)           # scale 
-##        monogram_label_1.setFixedSize(200-50, 250-50)            # display dimensions
-##        monogram_label_1.setAlignment(Qt.AlignmentFlag.AlignLeft)  # 
-##        Upper_layout.insertWidget(0, monogram_label_1) 
-
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
         #Upper_layout.addWidget(Upper_lable)
         ### 487 Monogram
         mono_487 = os.path.join(BASE_DIR, "Photos", "487_mono.png")
         monogram_label_2 = QtWidgets.QLabel()
+        monogram_label_2.setStyleSheet("background: transparent;")
         pixmap2 = QPixmap(mono_487)        
         monogram_label_2.setPixmap(pixmap2)                 
         monogram_label_2.setScaledContents(True)           # scale pixmap to label’s size 
         monogram_label_2.setFixedSize(200-50, 250-50)            # display dimensions
         monogram_label_2.setAlignment(Qt.AlignmentFlag.AlignRight)  
         Upper_layout.insertWidget(0, monogram_label_2) 
-
         
         ### title
         title_path = os.path.join(BASE_DIR, "Photos", "Title.png")
         title_label = QtWidgets.QLabel()
+        title_label.setStyleSheet("background: transparent;")        
         pixmap3 = QPixmap(title_path)        
         title_label.setPixmap(pixmap3)                 
         title_label.setScaledContents(True)           # scale pixmap to label’s size 
@@ -1346,9 +1355,9 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
         Upper_layout.insertWidget(0, title_label) 
 
-
         rad_gify_path = os.path.join(BASE_DIR, "Photos", "rad_gify.gif")
         gif_label = QtWidgets.QLabel()
+        gif_label.setStyleSheet("background: transparent;")                
         gif_label.setScaledContents(True)           # scale 
         gif_label.setFixedSize(200-50, 200-50)            # display dimensions
         gif_label.setAlignment(Qt.AlignmentFlag.AlignRight)  # 
@@ -1363,6 +1372,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         ### 487 label
         label_487 = os.path.join(BASE_DIR, "Photos", "lable_487_2.png")
         monogram_label_3 = QtWidgets.QLabel()
+        monogram_label_3.setStyleSheet("background: transparent;")                        
         pixmap3 = QPixmap(label_487)        
         monogram_label_3.setPixmap(pixmap3)                 
         monogram_label_3.setScaledContents(True)           # scale pixmap to label’s size 
@@ -1370,28 +1380,56 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 ##        monogram_label_3.setAlignment(Qt.AlignmentFlag.AlignRight)
         monogram_label_3.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         middle_layout_1.addWidget(monogram_label_3)
-
-        self.middle_layout_2 = QtWidgets.QVBoxLayout()
         
-        # Header information with larger fonts
-##        extra_label = QtWidgets.QLabel("")        
-##        header_label = QtWidgets.QLabel("Idea Conceived by: XXX")
-##        author_label = QtWidgets.QLabel("Developed by:  Flt Lt M. Ramzan Badini")
-##        conceived_label = QtWidgets.QLabel("Aproved by:  xxxx")
+        self.middle_layout_2 = QtWidgets.QHBoxLayout()
+        
+##########   AI activation Button
+        self.AI_layout = QtWidgets.QVBoxLayout()
+        AI_but_path = os.path.join(BASE_DIR, "Photos", "AI_button.png")        
+        self.AI_button = QtWidgets.QPushButton("", self)
+        self.AI_button.setMaximumSize(193, 70)
+        self.AI_button.setIcon(QIcon(AI_but_path))  # Your image file
+        self.AI_button.setIconSize(QSize(200, 100))  # Icon size
+        self.AI_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                border-radius: 10px;
+                background-color: #e0f7fa;
+                padding: 10px;
+                font-size: 16px;
+                background: transparent;
+            }
+            QPushButton:hover {
+                background-color: #b6b8e9 ;
+            }
+        """)
 
         
-##        for label in (extra_label, header_label, author_label, conceived_label):
-##            label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-##            label.setStyleSheet("font-size: 18px; font-weight: bold;")
-##            middle_layout_2.addWidget(label)
+        self.AI_button.clicked.connect(self.open_AI_app)
+        chat_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+A"), self)
+        chat_shortcut.activated.connect(self.open_AI_app)
+        
+        self.AI_layout.addWidget(self.AI_button)            
 
 
+
+########## ABOUT LABLES
+        self.about_label_layout = QtWidgets.QVBoxLayout()
+        
         about_labels = self.db_manager.get_compiler_labels()
         print(about_labels)
         self.add_labels(about_labels)
+        
+        self.middle_layout_2.addLayout(self.AI_layout)
+        self.middle_layout_2.addStretch()           # pushes the button column all the way right
+
+        
+        self.middle_layout_2.addLayout(self.about_label_layout)
+
 
         # container widget for buttons
         button_container = QtWidgets.QWidget()
+        button_container.setStyleSheet("background: transparent;")        
         button_container.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,     # Do not expand horizontally
             QtWidgets.QSizePolicy.Policy.Preferred   # Allow vertical adjustment
@@ -1402,10 +1440,10 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         button_layout_L = QtWidgets.QHBoxLayout(button_container)  
 
         button_layout.setSpacing(40)       # space between buttons
-        button_layout_L.setSpacing(400)       # space between buttons
+        button_layout_L.setSpacing(40)       # space between buttons
 
-        button_layout_L.setContentsMargins(0, 0, 0, 15)   # gap from lower 15 pixs 
-        button_layout.setContentsMargins(0, 0, 0, 10)   # gap from lower 15 pixs
+        button_layout_L.setContentsMargins(5, 0, 0, 10)   # gap from lower 15 pixs 
+       # button_layout.setContentsMargins(2, 2, 2, 2)   # gap from lower 15 pixs
 
 
         # Radar system font making
@@ -1416,7 +1454,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
 
         # comm system buttoning
         self.radar2_btn = QtWidgets.QPushButton("Comm Systems", self)
-        self.radar2_btn = self.main_but_style(self.radar2_btn, "#5aa539")
+        self.radar2_btn = self.main_but_style(self.radar2_btn, "#007ACC")
         self.radar2_btn.setMinimumSize(200, 80)
         self.radar2_btn.clicked.connect(lambda: self.open_radar_app("COMM"))
 
@@ -1438,7 +1476,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         button_layout_L.addWidget(self.radar3_btn)
         button_layout_L.addWidget(self.radar4_btn)        
 
-        button_layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # keeps them at the top of their column
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)  # keeps them at the top of their column
         button_layout_L.setAlignment(Qt.AlignmentFlag.AlignHCenter)  # keeps them at the top of their column
 
         layout.addLayout(Upper_layout)
@@ -1467,8 +1505,8 @@ class MainMenuWindow(QtWidgets.QMainWindow):
             
     def add_labels(self, values):
         ## delete previous lables form layout middle layout 
-        while self.middle_layout_2.count():
-            child = self.middle_layout_2.takeAt(0)
+        while self.about_label_layout.count():
+            child = self.about_label_layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()        
         
@@ -1479,8 +1517,9 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         conceived_label = QtWidgets.QLabel(values[3])
         for label in (extra_label, header_label, author_label, conceived_label):
             label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet("font-size: 18px; font-weight: bold;")
-            self.middle_layout_2.addWidget(label)            
+##            label.setStyleSheet("font-size: 18px; font-weight: bold;")
+            label.setStyleSheet("font-size: 18px; font-weight: bold; color: #6cf570; background: transparent;")
+            self.about_label_layout.addWidget(label)            
 
 ########  setting-up button style
     def main_but_style(self, button, color: str):
@@ -1490,8 +1529,8 @@ class MainMenuWindow(QtWidgets.QMainWindow):
                 color: black;
                 font-size: 22px;
                 font-weight: bold;
-                border: none;
-                border-radius: 16px;
+                border: 0.5px solid black;      /* 4px solid border */
+                border-radius: 20px solid black;
                 padding: 6px 12px;
                 max-width: 120;
             }}
@@ -1544,6 +1583,11 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         self.radar_window = RadarAppMainWindow(radar_type, self.db_manager, parent=self)
         self.radar_window.show()
         self.hide()
+
+    def open_AI_app(self):
+        self.chatbot_window = ChatBotWindow()
+        self.chatbot_window.show()
+##        self.hide()
 
     def show_main_menu(self):
         self.show()
