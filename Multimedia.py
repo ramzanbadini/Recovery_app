@@ -1,6 +1,7 @@
 import sys
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui, QtMultimedia, QtMultimediaWidgets
+from PyQt6.QtCore import QTimer
 
 #### this gives the media player of the app
 
@@ -55,6 +56,7 @@ class VideoPlayerWidget(QtWidgets.QWidget):
         play_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay))
         play_button.setToolTip("Play")
         play_button.setFixedSize(50, 32)
+
         play_button.clicked.connect(self.play_video)
         control_layout.addWidget(play_button)
 
@@ -240,6 +242,8 @@ class VideoPlayerWidget(QtWidgets.QWidget):
         if os.path.exists(video_path):
             url = QtCore.QUrl.fromLocalFile(video_path)
             self.mediaPlayer.setSource(url)
+          
+
         else:
             QtWidgets.QMessageBox.warning(self, "Error", "Video file not found.")
 
