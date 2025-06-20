@@ -9,6 +9,8 @@ from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtCore import QSize
 from PyQt6 import QtWidgets, QtCore, QtGui, QtMultimedia, QtMultimediaWidgets
 from PyQt6.QtCore import Qt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 master_key = "ramzee"
 master_password = "1234"
@@ -921,6 +923,92 @@ class RemoveDialog(QtWidgets.QDialog):
                     QtWidgets.QMessageBox.information(self, "Deleted", f"'{selected_sub}' deleted.")
                     self.load_sub_items()
 
+#####  the trand graphs dialog
+
+class TrandDialog(QtWidgets.QDialog):
+    def __init__(self, radar_type, db_manager, parent=None):
+        super().__init__(parent)
+        self.radar_type = radar_type
+        self.db_manager = db_manager
+        self.setWindowTitle("System Unserviceability Histogram")
+        self.resize(700, 500)
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f8f9fa;
+            }
+            QLabel#titleLabel {
+                font-size: 22px;
+                font-weight: bold;
+                color: #2c3e50;
+                padding-bottom: 10px;
+            }
+        """)
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Title Label
+        title_label = QtWidgets.QLabel("System Unserviceability Overview")
+        title_label.setObjectName("titleLabel")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_label)
+
+        # Chart placeholder
+        self.figure = Figure(figsize=(5, 4))
+        self.canvas = FigureCanvas(self.figure)
+        layout.addWidget(self.canvas)
+
+        # Button to refresh chart (optional for future use)
+        refresh_btn = QtWidgets.QPushButton("Refresh Chart")
+        refresh_btn.clicked.connect(self.plot_data)
+        refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        """)
+        layout.addWidget(refresh_btn, alignment=Qt.AlignmentFlag.AlignRight)
+
+        # Plot with mock data for now
+        self.plot_data()
+
+    def plot_data(self):
+        # Sample placeholder data (Replace with data from your database)
+        system_names = ["Power Supply", "Antenna Motor", "ACU", "Encoder", "PPi", "AGC mod", "IFF", "Reciever"]
+        unservice_counts = [5, 3, 7, 2, 6, 5,7,8]
+
+        self.figure.clear()
+        ax = self.figure.add_subplot(111)
+        bars = ax.bar(system_names, unservice_counts, color="#5DADE2", edgecolor='black')
+
+        # Add value labels on top of each bar
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, height + 0.1, str(height),
+                    ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+        ax.set_title(f"U/S Trand: {self.radar_type}", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Unserviceability Count")
+        ax.set_xlabel("System Name")
+        ax.set_ylim(0, max(unservice_counts) + 2)
+        ax.tick_params(axis='x', rotation=15)
+
+        self.canvas.draw()
+
+                    
+
+
+
+
 
 
 ### Window for uploading radar type
@@ -932,12 +1020,13 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(f"Radar Recovery Application - {radar_type}")
         self.showMaximized()
        # self.setMinimumSize(1000, 700)
+        self.pass_word = 1
+
         self.init_ui()
         self.setStyleSheet("background-color: #e2f1f6;")  # Light blue background
 
-
     def init_ui(self):
-        
+
         # Create main widget and a horizontal splitter for left (tree) and right (content)
         central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(central_widget)
@@ -1039,29 +1128,54 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         ref_layout.addWidget(self.doc_link_label, alignment=Qt.AlignmentFlag.AlignRight)
         groupLayout.addLayout(ref_layout)
 
-##        groupLayout.addWidget(self.doc_link_label)  # Add above the splitter
+        ##     groupLayout.addWidget(self.doc_link_label)  # Add above the splitter
 
         add_rem_layout = QtWidgets.QHBoxLayout()
 
-        # Upload Button
-        self.Upload_button = self.but_style("Upload", "#4a8349")
-        self.Upload_button.clicked.connect(lambda: self.request_login("upload"))
-        
-##        self.Upload_button.clicked.connect(self.request_login, "upload")
-        add_rem_layout.addWidget(self.Upload_button)
 
-        # Remove Button
-        self.remove_button = self.but_style("Remove", "#4a8349")
-        self.remove_button.clicked.connect(lambda: self.request_login("remove"))
-        
-        #self.remove_button.clicked.connect(self.request_login, "remove")
-        add_rem_layout.addWidget(self.remove_button)
+        ### acitivating shortcut key
+        # Set up keyboard shortcut (e.g., Ctrl+I) for labels change
+        pass_word_onof = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+P"), self)
+        pass_word_onof.activated.connect(self.get_password_status)
 
-        # Log 
-        self.remove_button = self.but_style("Log", "#4a8349")
-        self.remove_button.clicked.connect(lambda: self.request_login("log"))
+        if self.pass_word == 1:                
+            # Upload Button
+            self.Upload_button = self.but_style("Upload", "#4a8349")
+            self.Upload_button.clicked.connect(self.open_upload_dialog) #(lambda: self.request_login("upload"))
+            
+            add_rem_layout.addWidget(self.Upload_button)
 
-        #self.remove_button.clicked.connect(self.request_login, "log")
+            # Remove Button
+            self.remove_button = self.but_style("Remove", "#4a8349")
+            self.remove_button.clicked.connect(self.open_remove_dialog)#(lambda: self.request_login("remove"))
+            
+            add_rem_layout.addWidget(self.remove_button)
+
+            # Log 
+            self.remove_button = self.but_style("Trand", "#4a8349")
+            self.remove_button.clicked.connect(self.open_log_dialog)    #(lambda: self.request_login("Trand")) ##  to activate the password
+
+        if self.pass_word == 2:
+            # Upload Button
+            self.Upload_button = self.but_style("Upload", "#4a8349")
+            self.Upload_button.clicked.connect(lambda: self.request_login("upload"))
+            
+            add_rem_layout.addWidget(self.Upload_button)
+
+            # Remove Button
+            self.remove_button = self.but_style("Remove", "#4a8349")
+            self.remove_button.clicked.connect(lambda: self.request_login("remove"))
+            
+            add_rem_layout.addWidget(self.remove_button)
+
+            # Log 
+            self.remove_button = self.but_style("Trand", "#4a8349")
+            self.remove_button.clicked.connect(lambda: self.request_login("Trand")) ##  to activate the password
+
+
+
+                        
+
         add_rem_layout.addWidget(self.remove_button)
 
 
@@ -1252,11 +1366,11 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
                         print(f"An error occurred: {e}")
 
                 if action == "log":
-                    try:
+##                    try:
                         self.open_log_dialog()
-                    except AttributeError:
-                        print("Method 'open_log_dialog' does not exist.")
-                        QtWidgets.QMessageBox.warning(self, "Access Denied", "Feature not A/A yet")
+##                    except AttributeError:
+##                        print("Method 'open_log_dialog' does not exist.")
+##                        QtWidgets.QMessageBox.warning(self, "Access Denied", "Feature not A/A yet")
 
                         
 
@@ -1281,6 +1395,40 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
             print("item Deleted")            
             self.populate_tree()
 
+    def open_log_dialog(self):
+
+        dummy_db = [
+                ("Power Supply", 5),
+                ("Antenna Motor", 3),
+                ("ACU", 7),
+                ("USRP", 2),
+                ("Azimuth module", 6),
+                ("Encoder", 9),
+                ("PDU", 8),
+                ("Transformer", 7),
+            ]
+        
+        dialog = TrandDialog(self.radar_type, dummy_db, self)
+        dialog.exec()
+#            print("trands exe")
+
+        #if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+##            dialog = dialog.delete_item()
+##            self.populate_tree()
+
+
+    def get_password_status(self):
+        print("shortcut trigered")
+        if self.pass_word == 2:
+            self.pass_word = 1
+            print("password is 1")
+
+            return
+        else:
+            self.pass_word = 2
+            print("password is 2")
+
+            return
 
     def go_home(self):
         self.close()
