@@ -48,7 +48,11 @@ class ChatBotWindow(QtWidgets.QWidget):
         # === Sidebar (History) ===
         self.history_list = QtWidgets.QListWidget()
         self.history_list.setFixedWidth(200)
-        self.history_list.addItem("New Chat")
+        self.history_list.addItem("Document 1")
+        self.history_list.addItem("Document 2")
+        self.history_list.addItem("Document 3")
+        self.history_list.addItem("Document 4")
+
         main_layout.addWidget(self.history_list)
 
         # === Right side (Chat area) ===
@@ -84,7 +88,7 @@ class ChatBotWindow(QtWidgets.QWidget):
         self.input_field.clear()
 
         # Simulated bot response
-        QtCore.QTimer.singleShot(400, lambda: self.append_message("Bot", f"Echo: {user_msg}"))
+        QtCore.QTimer.singleShot(400, lambda: self.append_message("Response", f"Reply: {user_msg}"))
 
     def append_message(self, sender, message):
         color = "#2e86de" if sender == "You" else "#27ae60"

@@ -32,7 +32,11 @@ Merging the Main-Branch
 ####################  using pyinstaller
 
 pyinstaller --noconfirm --windowed --onefile Main_app.py ^
---add-data "radar_systems.db;." ^
+--add-data "radar_systems.db;" ^
 --add-data "Photos;Photos" ^
 --icon=Photos/icon.ico
+
+###	or use this in case of terminal issues:
+pyinstaller --noconfirm --windowed --onefile Main_app.py --add-data "radar_systems.db;." --add-data "Photos;Photos" --icon=Photos/icon.ico
+
 	
