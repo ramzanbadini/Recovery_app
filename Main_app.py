@@ -1499,7 +1499,7 @@ class MainMenuWindow(QtWidgets.QMainWindow):
         pixmap3 = QPixmap(title_path)        
         title_label.setPixmap(pixmap3)                 
         title_label.setScaledContents(True)           # scale pixmap to label’s size 
-        title_label.setFixedSize(400, 150)            # display dimensions
+        title_label.setFixedSize(450, 210)            # display dimensions
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  
         Upper_layout.insertWidget(0, title_label) 
 
