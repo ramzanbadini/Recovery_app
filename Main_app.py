@@ -499,18 +499,6 @@ class open_edit_dialog(QtWidgets.QDialog):
         exi_layout = QtWidgets.QHBoxLayout()
         exi_layout.addWidget(QtWidgets.QLabel(""))
         
-##        self.parent_combo = QtWidgets.QComboBox(self)
-##        self.parent_combo.setFixedWidth(400)  # Fix width
-##        self.parent_combo.addItem("New", userData=None)
-        
-        # Populate with top-level systems of this radar type
-
-##        for sys_id, name in self.db_manager.get_top_level_systems(self.radar_type):
-##            self.parent_combo.addItem(name, userData=sys_id)
-##
-
-        #exi_layout.addWidget(QtWidgets.QLabel("Parent System (optional):"))
-##        exi_layout.addWidget(self.parent_combo)
 
         layout.addLayout(new_sys_layout)
         layout.addLayout(exi_layout)
@@ -520,9 +508,7 @@ class open_edit_dialog(QtWidgets.QDialog):
         # Description
         self.description_edit = QtWidgets.QTextEdit(self)
         self.description_edit.setHtml(self.description)
-        #self.description_edit.toPlainText()
-        #self.description_edit.setPlaceholderText("Description/Rectification Steps")
-        ##        self.description_edit.toHtml()
+
         layout.addWidget(self.description_edit)
 
         #### the datelaoyt
@@ -901,9 +887,6 @@ class RemoveDialog(QtWidgets.QDialog):
 
                 del_sys = self.db_manager.delete_systems(self.radar_type, main_id)
                 
-##                cur.execute("DELETE FROM systems WHERE parent_id = ?", (main_id,))
-##                cur.execute("DELETE FROM systems WHERE id = ?", (main_id,))
-##                self.conn.commit()
                 QtWidgets.QMessageBox.information(self, "Deleted", f"'{selected_main}' and all its sub-systems deleted.")
                 self.load_main_items()
         else:
@@ -1366,11 +1349,7 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
                         print(f"An error occurred: {e}")
 
                 if action == "log":
-##                    try:
                         self.open_log_dialog()
-##                    except AttributeError:
-##                        print("Method 'open_log_dialog' does not exist.")
-##                        QtWidgets.QMessageBox.warning(self, "Access Denied", "Feature not A/A yet")
 
                         
 
@@ -1410,11 +1389,6 @@ class RadarAppMainWindow(QtWidgets.QMainWindow):
         
         dialog = TrandDialog(self.radar_type, dummy_db, self)
         dialog.exec()
-#            print("trands exe")
-
-        #if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-##            dialog = dialog.delete_item()
-##            self.populate_tree()
 
 
     def get_password_status(self):
